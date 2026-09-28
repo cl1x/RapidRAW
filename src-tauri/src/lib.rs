@@ -2268,6 +2268,7 @@ pub fn run() {
             immich::commands::immich_get_images,
             immich::commands::immich_suggestions,
             immich::commands::immich_list_people,
+            immich::commands::immich_timeline,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

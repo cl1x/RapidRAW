@@ -1,8 +1,8 @@
 use serde::Serialize;
 use serde_json::json;
-use tauri::AppHandle;
+use tauri::{AppHandle, Emitter};
 
-use super::client::{Album, ImmichClient, Person};
+use super::client::{Album, ImmichClient, Person, TimelineMonth};
 use super::config::{self, ImmichConfig};
 use super::{registry, reset_session, resolve, session};
 use crate::file_management::ImageFile;
@@ -68,6 +68,11 @@ pub async fn immich_suggestions(
 }
 
 #[tauri::command]
+pub async fn immich_timeline(app_handle: AppHandle) -> Result<Vec<TimelineMonth>, String> {
+    session(&app_handle)?.client.timeline_months().await
+}
+
+#[tauri::command]
 pub async fn immich_list_people(app_handle: AppHandle) -> Result<Vec<Person>, String> {
     session(&app_handle)?.client.named_people().await
 }
@@ -80,13 +85,19 @@ pub async fn immich_get_images(
     app_handle: AppHandle,
 ) -> Result<Vec<ImageFile>, String> {
     let session = session(&app_handle)?;
-    let resolved = resolve::listing(
+    let (resolved, truncated) = resolve::listing(
         &session.client,
         &session.config,
         &filter,
         &session.cache_dir,
     )
     .await?;
+    if truncated {
+        let _ = app_handle.emit(
+            "immich-listing-truncated",
+            json!({ "limit": resolve::LISTING_LIMIT }),
+        );
+    }
 
     let mut local_paths = Vec::new();
     let mut placeholders = Vec::new();

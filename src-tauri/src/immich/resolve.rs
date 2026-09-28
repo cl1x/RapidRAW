@@ -121,6 +121,11 @@ fn choose<'a>(listed: &'a Asset, raw_candidates: &'a [Asset], cache_dir: &Path) 
         .unwrap_or(listed)
 }
 
+/// Listings stop at this many images, newest first. RapidRAW reads the EXIF
+/// data of every image in a listing, which takes long beyond this; narrower
+/// listings come from the timeline or a filter.
+pub const LISTING_LIMIT: usize = 2000;
+
 /// Up to this many images, the RAW behind every JPEG is looked up. Beyond it
 /// only exports are, since a search per image would take minutes.
 const FULL_LOOKUP_LIMIT: usize = 2000;
@@ -197,18 +202,18 @@ async fn same_stem(client: &ImmichClient, stem: &str) -> Vec<Asset> {
         .collect()
 }
 
+/// The images matching `filter`, and whether there were more than
+/// `LISTING_LIMIT`.
 pub async fn listing(
     client: &ImmichClient,
     config: &ImmichConfig,
     filter: &Filter,
     cache_dir: &Path,
-) -> Result<Vec<Resolved>, String> {
-    let mut assets: Vec<Asset> = client
-        .search(filter.to_query())
-        .await?
-        .into_iter()
-        .filter(|a| a.kind == "IMAGE")
-        .collect();
+) -> Result<(Vec<Resolved>, bool), String> {
+    let mut query = filter.to_query();
+    query["order"] = json!("desc");
+    let (found, truncated) = client.search_up_to(query, Some(LISTING_LIMIT)).await?;
+    let mut assets: Vec<Asset> = found.into_iter().filter(|a| a.kind == "IMAGE").collect();
 
     if filter.not_in_album {
         assets = without_developed_raws(client, assets).await;
@@ -258,7 +263,7 @@ pub async fn listing(
             },
         });
     }
-    Ok(resolved)
+    Ok((resolved, truncated))
 }
 
 fn is_export(asset: &Asset) -> bool {

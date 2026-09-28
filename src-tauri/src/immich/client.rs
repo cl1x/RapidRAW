@@ -60,6 +60,14 @@ pub struct User {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TimelineMonth {
+    /// First day of the month, e.g. `2026-09-01`.
+    pub time_bucket: String,
+    pub count: u64,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Person {
     pub id: String,
     pub name: String,
@@ -234,6 +242,16 @@ impl ImmichClient {
 
     /// Pages through `/search/metadata` and returns every hit.
     pub async fn search(&self, query: Value) -> Result<Vec<Asset>, String> {
+        Ok(self.search_up_to(query, None).await?.0)
+    }
+
+    /// Like `search`, but stops after `limit` hits. The second value tells
+    /// whether there were more.
+    pub async fn search_up_to(
+        &self,
+        query: Value,
+        limit: Option<usize>,
+    ) -> Result<(Vec<Asset>, bool), String> {
         let mut found = Vec::new();
         let mut page = 1u32;
         loop {
@@ -249,11 +267,28 @@ impl ImmichClient {
                 )
                 .await?;
             found.extend(result.assets.items);
-            match result.assets.next_page.and_then(|p| p.parse().ok()) {
+            let next = result.assets.next_page.and_then(|p| p.parse().ok());
+            if let Some(limit) = limit
+                && found.len() >= limit
+            {
+                let more = found.len() > limit || next.is_some();
+                found.truncate(limit);
+                return Ok((found, more));
+            }
+            match next {
                 Some(next) if next > page => page = next,
-                _ => return Ok(found),
+                _ => return Ok((found, false)),
             }
         }
+    }
+
+    /// Months with photos, newest first, as Immich's timeline groups them.
+    pub async fn timeline_months(&self) -> Result<Vec<TimelineMonth>, String> {
+        self.json(
+            self.request(Method::GET, "/timeline/buckets?visibility=timeline"),
+            "timeline",
+        )
+        .await
     }
 
     /// Streams the original file to `target` without holding it in memory.
