@@ -1,3 +1,54 @@
+> [!NOTE]
+> **Unofficial fork.** This is [RapidRAW](https://github.com/CyberTimon/RapidRAW)
+> by Timon Käch with an added [Immich](https://immich.app) integration. It is meant
+> to become part of RapidRAW; until then, please report problems with it here,
+> not upstream.
+
+# RapidRAW + Immich
+
+Edit the photos of your Immich server directly in RapidRAW – no exporting,
+copying or re-uploading by hand.
+
+<!-- screenshot: the Immich section in the sidebar next to an opened image -->
+
+- **Your Immich library in the sidebar** – albums, a timeline by month, photos
+  in no album, and a filter by date, place, camera and person.
+- **Edit the original** – opening an image downloads it into a cache. For an
+  export stacked on top of its RAW, the RAW is opened.
+- **Edits live in Immich** – stored with the image on the server, so they are
+  the same on every computer.
+- **Exports go back** – into the album, stacked on top of their RAW.
+- **Cull and sort** – delete to Immich's trash, drag images onto albums, drag
+  local files in to upload a copy.
+
+Nothing changes until you set up Immich in the settings. Details, setup and
+limits are in **[IMMICH.md](IMMICH.md)**.
+
+### Try it
+
+There are no ready-made builds of this fork yet – the downloads further down
+are the official RapidRAW, without Immich. With
+[Rust](https://www.rust-lang.org/tools/install) and
+[Node.js](https://nodejs.org/) installed:
+
+```bash
+git clone https://github.com/cl1x/RapidRAW.git
+cd RapidRAW
+npm install
+npm run tauri build
+./src-tauri/target/release/RapidRAW
+```
+
+Then open *Settings → Immich*, enter your server address and an API key, and
+save.
+
+The fork shares its settings, presets and albums with an installed RapidRAW,
+and only one of the two can run at a time. Tested on Linux with Immich 3.2.
+
+---
+
+<sub>Everything below is the README of RapidRAW itself.</sub>
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/CyberTimon/RapidRAW/assets/.github/assets/editor.jpg" alt="RapidRAW Editor">
 </p>
