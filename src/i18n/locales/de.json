@@ -911,12 +911,30 @@
     }
   },
   "immich": {
+    "filter": {
+      "album": "Album",
+      "any": "Alle",
+      "apply": "Anzeigen",
+      "city": "Ort",
+      "country": "Land",
+      "favoritesOnly": "Nur Favoriten",
+      "from": "Von",
+      "make": "Kamerahersteller",
+      "model": "Kameramodell",
+      "person": "Person",
+      "reset": "Filter zurücksetzen",
+      "until": "Bis"
+    },
     "section": {
+      "all": "Alle Fotos",
       "empty": "Keine Alben auf dem Server.",
       "error": "Immich ist nicht erreichbar.",
+      "filter": "Filtern…",
       "loading": "Alben werden geladen…",
       "refresh": "Alben aktualisieren",
-      "title": "Immich"
+      "title": "Immich",
+      "unassigned": "Ohne Album",
+      "unassignedHint": "Bilder hierher ziehen, um sie ohne Album hochzuladen."
     },
     "settings": {
       "apiKey": "API-Schlüssel",
@@ -932,6 +950,8 @@
       "description": "Zeigt die Alben deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen und Bearbeitungen in Immich gespeichert – auf jedem Rechner derselbe Stand.",
       "preferRaw": "Bei Exporten das RAW öffnen",
       "preferRawDesc": "Liegt in einem Album ein Export wie IMG_0042_edited.jpg, wird stattdessen das zugehörige RAW geöffnet.",
+      "rawLeavesAlbum": "RAW aus dem Album nehmen",
+      "rawLeavesAlbumDesc": "Sobald sein Export im Album liegt, verlässt das RAW das Album und bleibt im Stapel unter dem Export. Immich fasst Stapel in Alben nicht zusammen, sonst würde das Album beides zeigen.",
       "replacePrevious": "Vorherigen Export ersetzen",
       "replacePreviousDesc": "Der bisherige Export wandert in den Papierkorb von Immich, der neue übernimmt seine Alben.",
       "save": "Speichern",
@@ -946,8 +966,13 @@
     },
     "toasts": {
       "downloadFailed": "Download aus Immich fehlgeschlagen: {{error}}",
-      "uploaded": "{{fileName}} zu Immich hochgeladen",
-      "uploadFailed": "Hochladen von {{fileName}} zu Immich fehlgeschlagen: {{error}}"
+      "transferFailed_one": "{{count}} Bild konnte nicht zu Immich hinzugefügt werden: {{error}}",
+      "transferFailed_other": "{{count}} Bilder konnten nicht zu Immich hinzugefügt werden: {{error}}",
+      "transferred_one": "{{count}} Bild zu Immich hinzugefügt",
+      "transferred_other": "{{count}} Bilder zu Immich hinzugefügt",
+      "transferring": "Wird zu Immich hinzugefügt… {{current}}/{{total}}",
+      "uploadFailed": "Hochladen von {{fileName}} zu Immich fehlgeschlagen: {{error}}",
+      "uploaded": "{{fileName}} zu Immich hochgeladen"
     }
   },
   "library": {

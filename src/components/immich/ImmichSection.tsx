@@ -1,12 +1,23 @@
-import { ReactNode, useEffect, useMemo } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import clsx from 'clsx';
-import { Album as AlbumIcon, RefreshCw, Users } from 'lucide-react';
+import { useDroppable } from '@dnd-kit/core';
+import { Album as AlbumIcon, Images, Inbox, MoveRight, RefreshCw, SlidersHorizontal, Users } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import Text from '../ui/Text';
 import { TextColors, TextVariants, TextWeights } from '../../types/typography';
-import { ImmichAlbum, toImmichAlbumId } from './immichApi';
+import { useUIStore } from '../../store/useUIStore';
+import {
+  filterToAlbumId,
+  IMMICH_ALL_ID,
+  IMMICH_UNASSIGNED_ID,
+  ImmichFilter,
+  isImmichFilterId,
+  toImmichAlbumId,
+} from './immichApi';
+import ImmichFilterForm, { describeFilter } from './ImmichFilterForm';
 import { useImmichStore } from './useImmichStore';
 
 interface ImmichSectionProps {
@@ -20,8 +31,10 @@ interface ImmichSectionProps {
 }
 
 /**
- * The albums of the connected Immich server, as a section of the folder tree.
- * Renders nothing until Immich is set up in the settings.
+ * The connected Immich server as a section of the folder tree: all photos,
+ * photos in no album, a filter, and the albums. Images can be dropped on an
+ * album to add them, or on "in no album" to upload them. Renders nothing until
+ * Immich is set up in the settings.
  */
 export default function ImmichSection({
   header,
@@ -32,16 +45,19 @@ export default function ImmichSection({
   showImageCounts,
 }: ImmichSectionProps) {
   const { t } = useTranslation();
-  const { isConfigured, albums, isLoading, error, refresh, loadAlbums } = useImmichStore(
+  const { isConfigured, albums, isLoading, error, filter, setFilter, refresh, loadAlbums } = useImmichStore(
     useShallow((state) => ({
       isConfigured: state.isConfigured,
       albums: state.albums,
       isLoading: state.isLoading,
       error: state.error,
+      filter: state.filter,
+      setFilter: state.setFilter,
       refresh: state.refresh,
       loadAlbums: state.loadAlbums,
     })),
   );
+  const [isFilterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     refresh();
@@ -57,6 +73,15 @@ export default function ImmichSection({
     return null;
   }
 
+  const isFilterSelected = isImmichFilterId(selectedAlbumId);
+
+  const applyFilter = (next: ImmichFilter) => {
+    setFilter(next);
+    setFilterOpen(false);
+    const title = describeFilter(next, albums, t('immich.section.all'), t('immich.section.unassigned'));
+    onSelectAlbum(filterToAlbumId(next), title, []);
+  };
+
   return (
     <>
       <div>{header}</div>
@@ -70,13 +95,54 @@ export default function ImmichSection({
             className="overflow-hidden"
           >
             <div className="pt-1 pb-2">
+              {!query && (
+                <>
+                  <ImmichRow
+                    icon={Images}
+                    label={t('immich.section.all')}
+                    isSelected={selectedAlbumId === IMMICH_ALL_ID}
+                    onSelect={() => onSelectAlbum(IMMICH_ALL_ID, t('immich.section.all'), [])}
+                  />
+                  <ImmichRow
+                    icon={Inbox}
+                    label={t('immich.section.unassigned')}
+                    dropId={IMMICH_UNASSIGNED_ID}
+                    isSelected={selectedAlbumId === IMMICH_UNASSIGNED_ID}
+                    onSelect={() => onSelectAlbum(IMMICH_UNASSIGNED_ID, t('immich.section.unassigned'), [])}
+                    tooltip={t('immich.section.unassignedHint')}
+                  />
+                  <ImmichRow
+                    icon={SlidersHorizontal}
+                    label={t('immich.section.filter')}
+                    isSelected={isFilterSelected}
+                    onSelect={() => setFilterOpen((open) => !open)}
+                  />
+                  <AnimatePresence initial={false}>
+                    {isFilterOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <ImmichFilterForm albums={albums} initial={filter} onApply={applyFilter} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div className="my-1 mx-2 h-px bg-surface" />
+                </>
+              )}
+
               {visibleAlbums.map((album) => (
-                <ImmichAlbumRow
+                <ImmichRow
                   key={album.id}
-                  album={album}
+                  icon={album.shared ? Users : AlbumIcon}
+                  label={album.albumName}
+                  count={album.assetCount}
+                  showCount={showImageCounts}
+                  dropId={toImmichAlbumId(album.id)}
                   isSelected={toImmichAlbumId(album.id) === selectedAlbumId}
                   onSelect={() => onSelectAlbum(toImmichAlbumId(album.id), album.albumName, [])}
-                  showImageCount={showImageCounts}
                 />
               ))}
 
@@ -114,45 +180,70 @@ export default function ImmichSection({
   );
 }
 
-function ImmichAlbumRow({
-  album,
+/**
+ * One entry of the section. With a `dropId`, library images can be dropped on
+ * it; the library's drop handler passes them to `add_to_album` like for local
+ * albums, and the backend takes it from there.
+ */
+function ImmichRow({
+  icon,
+  label,
+  count,
+  showCount = false,
+  dropId,
   isSelected,
   onSelect,
-  showImageCount,
+  tooltip,
 }: {
-  album: ImmichAlbum;
+  icon: LucideIcon;
+  label: string;
+  count?: number;
+  showCount?: boolean;
+  dropId?: string;
   isSelected: boolean;
   onSelect(): void;
-  showImageCount: boolean;
+  tooltip?: string;
 }) {
-  const ItemIcon = album.shared ? Users : AlbumIcon;
+  const isLayoutDragging = useUIStore((state) => !!state.activeLayoutDragItem);
+  const { setNodeRef, isOver, active } = useDroppable({
+    id: `album-immich-${dropId ?? label}`,
+    data: { type: 'album', id: dropId },
+    disabled: !dropId || isLayoutDragging,
+  });
+  const isDropTarget = !!dropId && isOver && active?.data?.current?.type === 'library-image';
+  const Icon = isDropTarget ? MoveRight : icon;
 
   return (
     <Text as="div" color={TextColors.primary} weight={TextWeights.medium}>
       <div
+        ref={setNodeRef}
         className={clsx('flex items-center gap-2 p-1.5 rounded-md transition-colors cursor-pointer', {
-          'bg-surface': isSelected,
-          'hover:bg-card-active': !isSelected,
+          'bg-surface': isSelected && !isDropTarget,
+          'hover:bg-card-active': !isSelected && !isDropTarget,
+          'bg-accent/20': isDropTarget,
         })}
         onClick={onSelect}
+        data-tooltip={tooltip}
       >
         <div className="w-5 h-5 flex items-center justify-center p-0.5 rounded-sm text-text-secondary shrink-0">
-          <ItemIcon size={16} />
+          <Icon size={16} />
         </div>
         <span className="min-w-0 flex-1 select-none">
-          <span className="block truncate">{album.albumName}</span>
+          <span className="block truncate">{label}</span>
         </span>
-        <Text
-          as="span"
-          variant={TextVariants.small}
-          color={TextColors.secondary}
-          className={clsx(
-            'ml-auto min-w-8 shrink-0 text-right tabular-nums transition-opacity ease-in-out duration-300',
-            showImageCount ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          {album.assetCount}
-        </Text>
+        {count !== undefined && (
+          <Text
+            as="span"
+            variant={TextVariants.small}
+            color={TextColors.secondary}
+            className={clsx(
+              'ml-auto min-w-8 shrink-0 text-right tabular-nums transition-opacity ease-in-out duration-300',
+              showCount ? 'opacity-100' : 'opacity-0',
+            )}
+          >
+            {count}
+          </Text>
+        )}
         <div className="w-5 h-5 shrink-0" aria-hidden="true" />
       </div>
     </Text>

@@ -957,12 +957,30 @@
     }
   },
   "immich": {
+    "filter": {
+      "album": "",
+      "any": "",
+      "apply": "",
+      "city": "",
+      "country": "",
+      "favoritesOnly": "",
+      "from": "",
+      "make": "",
+      "model": "",
+      "person": "",
+      "reset": "",
+      "until": ""
+    },
     "section": {
+      "all": "",
       "empty": "",
       "error": "",
+      "filter": "",
       "loading": "",
       "refresh": "",
-      "title": ""
+      "title": "",
+      "unassigned": "",
+      "unassignedHint": ""
     },
     "settings": {
       "apiKey": "",
@@ -978,6 +996,8 @@
       "description": "",
       "preferRaw": "",
       "preferRawDesc": "",
+      "rawLeavesAlbum": "",
+      "rawLeavesAlbumDesc": "",
       "replacePrevious": "",
       "replacePreviousDesc": "",
       "save": "",
@@ -992,8 +1012,13 @@
     },
     "toasts": {
       "downloadFailed": "",
-      "uploaded": "",
-      "uploadFailed": ""
+      "transferFailed_one": "",
+      "transferFailed_other": "",
+      "transferred_one": "",
+      "transferred_other": "",
+      "transferring": "",
+      "uploadFailed": "",
+      "uploaded": ""
     }
   },
   "library": {
