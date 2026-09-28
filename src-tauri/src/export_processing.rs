@@ -1839,6 +1839,8 @@ pub(crate) async fn export_images_impl(
                         )?;
                     }
 
+                    crate::immich::on_exported(&app_handle_clone, &source_path_str, &output_path);
+
                     Ok(())
                 })();
 
@@ -1939,6 +1941,7 @@ pub async fn export_images(
     state: tauri::State<'_, AppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    crate::immich::ensure_local_all(&app_handle, &paths).await?;
     export_images_impl(
         paths,
         output_folder_or_file,
