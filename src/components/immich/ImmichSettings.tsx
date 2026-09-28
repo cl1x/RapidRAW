@@ -38,13 +38,11 @@ function Field({ label, description, children }: { label: string; description?: 
   );
 }
 
-/** Settings page for the Immich connection, shown as its own category. */
 export default function ImmichSettings() {
   const { t } = useTranslation();
   const refreshImmich = useImmichStore((state) => state.refresh);
   const [config, setConfig] = useState<ImmichConfig | null>(null);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
-  /** The key as last loaded or saved, to tell where it is stored. */
   const [savedKey, setSavedKey] = useState('');
 
   useEffect(() => {

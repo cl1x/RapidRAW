@@ -7,7 +7,6 @@ use std::path::Path;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 
-/// The subset of Immich's `AssetResponseDto` the integration needs.
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Asset {
@@ -38,8 +37,7 @@ pub struct Album {
     pub shared: bool,
 }
 
-/// Immich answers `created` or `duplicate` - it recognises identical files by
-/// checksum and then returns the existing asset's id.
+/// For a `duplicate`, Immich returns the id of the existing asset.
 #[derive(Deserialize, Debug, Clone)]
 pub struct UploadResult {
     pub id: String,
@@ -59,7 +57,6 @@ pub struct User {
     pub email: String,
 }
 
-/// An Immich stack: an export on top of its RAW, or a burst of shots.
 #[derive(Deserialize, Debug, Clone)]
 pub struct Stack {
     pub assets: Vec<Asset>,
@@ -68,7 +65,6 @@ pub struct Stack {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TimelineMonth {
-    /// First day of the month, e.g. `2026-09-01`.
     pub time_bucket: String,
     pub count: u64,
 }
@@ -180,7 +176,6 @@ impl ImmichClient {
             .await
     }
 
-    /// Owned albums and albums shared with the user.
     pub async fn albums(&self) -> Result<Vec<Album>, String> {
         self.json(self.request(Method::GET, "/albums"), "albums")
             .await
@@ -194,9 +189,6 @@ impl ImmichClient {
         .await
     }
 
-    /// Values Immich knows for a filter field: `country`, `city`,
-    /// `camera-make`, `camera-model`. Narrowed by the country for cities and by
-    /// the make for models.
     pub async fn suggestions(
         &self,
         kind: &str,
@@ -220,7 +212,6 @@ impl ImmichClient {
             .collect())
     }
 
-    /// People with a name; unnamed faces are no use as a filter.
     pub async fn named_people(&self) -> Result<Vec<Person>, String> {
         let mut people = Vec::new();
         let mut page = 1u32;
@@ -246,8 +237,7 @@ impl ImmichClient {
         Ok(people)
     }
 
-    /// Pages through `/search/metadata`, stopping after `limit` hits. The
-    /// second value tells whether there were more.
+    /// The second value tells whether there were more than `limit` hits.
     pub async fn search_up_to(
         &self,
         query: Value,
@@ -288,7 +278,6 @@ impl ImmichClient {
             .await
     }
 
-    /// Months with photos, newest first, as Immich's timeline groups them.
     pub async fn timeline_months(&self) -> Result<Vec<TimelineMonth>, String> {
         self.json(
             self.request(Method::GET, "/timeline/buckets?visibility=timeline"),
@@ -297,7 +286,6 @@ impl ImmichClient {
         .await
     }
 
-    /// Streams the original file to `target` without holding it in memory.
     pub async fn download_original(&self, asset_id: &str, target: &Path) -> Result<(), String> {
         let mut response = self
             .send(
@@ -318,7 +306,6 @@ impl ImmichClient {
         file.flush().await.map_err(|e| e.to_string())
     }
 
-    /// `size` is `thumbnail` (small webp) or `preview` (large jpeg).
     pub async fn thumbnail(&self, asset_id: &str, size: &str) -> Result<Vec<u8>, String> {
         let response = self
             .send(
@@ -365,8 +352,6 @@ impl ImmichClient {
         .await
     }
 
-    /// A key/value entry Immich stores alongside an asset, with the time it was
-    /// last written. `None` if the asset has no entry under `key`.
     pub async fn metadata(
         &self,
         asset_id: &str,
@@ -393,7 +378,6 @@ impl ImmichClient {
             .map_err(|e| format!("Unexpected answer from Immich (edits): {e}"))
     }
 
-    /// Stores `value` under `key` and returns the new update time.
     pub async fn set_metadata(
         &self,
         asset_id: &str,
@@ -438,8 +422,7 @@ impl ImmichClient {
         .map(|_| ())
     }
 
-    /// The first id becomes the primary asset. Assets already stacked are
-    /// merged into the new stack by Immich.
+    /// The first id becomes the primary asset; existing stacks are merged.
     pub async fn create_stack(&self, asset_ids: &[String]) -> Result<(), String> {
         self.send(
             self.request(Method::POST, "/stacks")
@@ -450,7 +433,6 @@ impl ImmichClient {
         .map(|_| ())
     }
 
-    /// Moves assets to Immich's trash; they can be restored from there.
     pub async fn trash(&self, asset_ids: &[String]) -> Result<(), String> {
         self.send(
             self.request(Method::DELETE, "/assets")
@@ -480,7 +462,6 @@ fn mime_for(file_name: &str) -> &'static str {
     }
 }
 
-/// Percent-encodes a query parameter value.
 fn encode(value: &str) -> String {
     value
         .bytes()

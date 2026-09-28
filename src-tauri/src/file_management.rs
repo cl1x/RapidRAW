@@ -293,8 +293,7 @@ pub struct ImageFile {
 }
 
 impl ImageFile {
-    /// A library entry for a file that is not on disk yet, such as an image of
-    /// a remote library that is downloaded when it is opened.
+    /// An entry for a remote file that is downloaded when opened.
     pub fn placeholder(path: String, modified: u64) -> Self {
         let is_raw = crate::formats::is_raw_file(&path);
         Self {
