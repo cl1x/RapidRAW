@@ -23,10 +23,6 @@ type TransferEvent =
 
 const TRANSFER_TOAST = 'immich-transfer';
 
-/**
- * Reports downloads, uploads and album changes of Immich images, wherever the
- * user is, and reloads the library when Immich changed underneath it.
- */
 export function useImmichEvents(refreshLibrary: () => void) {
   const { t } = useTranslation();
   const refreshRef = useRef(refreshLibrary);

@@ -1,7 +1,4 @@
-//! The API key goes into the system's credential store - Secret Service on
-//! Linux, the Keychain on macOS, the Credential Manager on Windows - where it
-//! is encrypted and only unlocked with the user's login. Where there is no
-//! such store, `config` keeps it in its owner-only file instead.
+//! The API key in the system's credential store, where there is one.
 
 const SERVICE: &str = "io.github.CyberTimon.RapidRAW.immich";
 const ACCOUNT: &str = "api-key";
@@ -34,9 +31,8 @@ mod store {
         })
     }
 
-    /// Runs `f` against the credential store on a thread of its own: the Linux
-    /// store blocks on an async runtime internally, which must not happen on
-    /// one of the app's runtime threads. `None` if there is no store.
+    /// Runs on a thread of its own: the Linux store blocks on an async runtime
+    /// internally, which must not happen on one of the app's runtime threads.
     pub fn with_entry<T: Send + 'static>(
         f: impl FnOnce(&keyring_core::Entry) -> keyring_core::Result<T> + Send + 'static,
     ) -> Option<keyring_core::Result<T>> {
@@ -52,7 +48,7 @@ mod store {
     }
 }
 
-/// Stores the key. Returns false if there is no credential store to take it.
+/// False if there is no credential store to take the key.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub fn save(api_key: &str) -> bool {
     let api_key = api_key.to_string();

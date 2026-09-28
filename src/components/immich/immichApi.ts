@@ -1,12 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ImageFile } from '../ui/AppProperties';
 
-/**
- * Immich listings share the library's album flow. Their ids carry this prefix
- * so they never collide with local albums and can be told apart wherever the
- * active album id is handled. After the prefix comes an Immich album id, one
- * of the pseudo albums below, or `?` and a filter as JSON.
- */
+// Immich listings go through the album flow of the library. Their ids are this
+// prefix followed by an Immich album id, a pseudo album, or `?` and a filter.
 export const IMMICH_ALBUM_PREFIX = 'immich:';
 export const IMMICH_ALL_ID = `${IMMICH_ALBUM_PREFIX}all`;
 export const IMMICH_UNASSIGNED_ID = `${IMMICH_ALBUM_PREFIX}unassigned`;
@@ -40,7 +36,6 @@ export interface ImmichConfig {
   rawLeavesAlbum: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
-  /** Set by the backend when saving: where the API key ended up. */
   keyInCredentialStore: boolean;
 }
 
@@ -55,7 +50,6 @@ export interface ImmichAlbum {
 }
 
 export interface ImmichTimelineMonth {
-  /** First day of the month, `YYYY-MM-DD`. */
   timeBucket: string;
   count: number;
 }
@@ -71,11 +65,10 @@ export interface ImmichConnectionInfo {
   userEmail: string;
 }
 
-/** Mirrors `resolve::Filter` in the backend. Empty fields do not filter. */
+// Mirrors `resolve::Filter` in the backend.
 export interface ImmichFilter {
   albumId?: string | null;
   notInAlbum?: boolean;
-  /** `YYYY-MM-DD`, both days included. */
   takenFrom?: string | null;
   takenUntil?: string | null;
   country?: string | null;
@@ -125,7 +118,6 @@ export const listImmichPeople = () => invoke<ImmichPerson[]>(ImmichInvokes.ListP
 
 export const listImmichTimeline = () => invoke<ImmichTimelineMonth[]>(ImmichInvokes.Timeline);
 
-/** The filter for one month of the timeline. */
 export const monthFilter = (timeBucket: string): ImmichFilter => {
   const [year, month] = timeBucket.split('-').map(Number);
   const lastDay = new Date(year, month, 0).getDate();
@@ -133,6 +125,5 @@ export const monthFilter = (timeBucket: string): ImmichFilter => {
   return { takenFrom: `${year}-${mm}-01`, takenUntil: `${year}-${mm}-${String(lastDay).padStart(2, '0')}` };
 };
 
-/** Takes an id from the library: prefixed album id, pseudo album or filter. */
 export const getImmichAlbumImages = (albumId: string) =>
   invoke<ImageFile[]>(ImmichInvokes.GetImages, { filter: albumIdToFilter(albumId) });

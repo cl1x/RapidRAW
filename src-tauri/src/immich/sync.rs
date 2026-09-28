@@ -1,11 +1,6 @@
-//! Keeps RapidRAW's sidecar of an Immich image in Immich itself, as asset
-//! metadata, so edits follow the image to every machine.
-//!
-//! The sidecar in the cache folder stays the working copy; RapidRAW reads and
-//! writes it as always. Next to it, `.immich-sync.json` remembers which state
-//! was last exchanged with the server. That is enough to tell a local change
-//! (sidecar modified since) from a remote one (newer update time on the server).
-//! If both changed, the local edit wins - it is the one the user just made.
+//! Syncs the sidecar of an Immich image with the asset's metadata on the
+//! server. `.immich-sync.json` records the last exchanged state to tell local
+//! from remote changes; when both changed, the local edit wins.
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -14,7 +9,6 @@ use std::time::UNIX_EPOCH;
 
 use super::client::ImmichClient;
 
-/// Metadata key the sidecar is stored under.
 pub const EDITS_KEY: &str = "rapidraw";
 
 const STATE_FILE: &str = ".immich-sync.json";
@@ -22,9 +16,7 @@ const STATE_FILE: &str = ".immich-sync.json";
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 struct SyncState {
-    /// Modification time of the sidecar when it was last pulled or pushed.
     local_modified_ms: Option<u64>,
-    /// Update time of the server entry when it was last pulled or pushed.
     remote_updated_at: Option<String>,
 }
 
@@ -54,7 +46,6 @@ fn modified_ms(path: &Path) -> Option<u64> {
     Some(modified.duration_since(UNIX_EPOCH).ok()?.as_millis() as u64)
 }
 
-/// True if the sidecar changed since the last exchange with the server.
 pub fn has_local_changes(source: &Path) -> bool {
     match modified_ms(&sidecar_of(source)) {
         Some(modified) => load_state(source).local_modified_ms != Some(modified),
@@ -62,7 +53,6 @@ pub fn has_local_changes(source: &Path) -> bool {
     }
 }
 
-/// Fetches edits made elsewhere, unless there are unsent local ones.
 pub async fn pull(client: &ImmichClient, asset_id: &str, source: &Path) -> Result<(), String> {
     let Some(remote) = client.metadata(asset_id, EDITS_KEY).await? else {
         return Ok(());
@@ -92,7 +82,6 @@ pub async fn pull(client: &ImmichClient, asset_id: &str, source: &Path) -> Resul
     Ok(())
 }
 
-/// Sends the sidecar to the server if it changed. Returns whether it did.
 pub async fn push(client: &ImmichClient, asset_id: &str, source: &Path) -> Result<bool, String> {
     let sidecar = sidecar_of(source);
     let Some(modified) = modified_ms(&sidecar) else {
@@ -119,9 +108,8 @@ pub async fn push(client: &ImmichClient, asset_id: &str, source: &Path) -> Resul
     Ok(true)
 }
 
-/// Removes cached originals, oldest download first, until the cache is below
-/// `limit_bytes`. Sidecars stay, and so does every original whose edits have
-/// not reached the server yet or that was fetched in the last hour.
+/// Removes the oldest downloads first, but never sidecars, originals with
+/// unsent edits, or anything fetched within the last hour.
 pub fn prune_cache(cache_dir: &Path, limit_bytes: u64) {
     let Ok(folders) = fs::read_dir(cache_dir) else {
         return;

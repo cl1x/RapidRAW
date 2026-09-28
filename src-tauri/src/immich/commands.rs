@@ -27,7 +27,6 @@ pub fn immich_save_config(config: ImmichConfig, app_handle: AppHandle) -> Result
     Ok(())
 }
 
-/// Checks address and key before they are saved.
 #[tauri::command]
 pub async fn immich_test_connection(
     server_url: String,
@@ -77,8 +76,6 @@ pub async fn immich_list_people(app_handle: AppHandle) -> Result<Vec<Person>, St
     session(&app_handle)?.client.named_people().await
 }
 
-/// The images matching `filter` as library entries. Downloaded originals are
-/// read like any album image; the others become cloud placeholders.
 #[tauri::command]
 pub async fn immich_get_images(
     filter: resolve::Filter,

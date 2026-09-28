@@ -10,21 +10,14 @@ use super::secrets;
 pub struct ImmichConfig {
     pub server_url: String,
     pub api_key: String,
-    /// Open the RAW stacked under an image instead of the image itself.
     pub prefer_raw: bool,
-    /// Upload exports of Immich images back to the album they came from.
     pub upload_exports: bool,
-    /// Move the previously uploaded export of the same image to Immich's trash.
     pub replace_previous_export: bool,
-    /// Take the RAW out of the album once its export is in it. Immich does not
-    /// collapse stacks inside albums, so the album would show both.
+    /// Immich does not collapse stacks inside albums.
     pub raw_leaves_album: bool,
-    /// Where originals are cached. Defaults to the app cache folder.
     pub cache_dir: Option<String>,
-    /// Downloaded originals beyond this size are removed, oldest first.
     pub cache_limit_gb: u32,
-    /// Whether the API key is in the system's credential store rather than in
-    /// this file. Set when saving; shown in the settings.
+    /// Set when saving; the key is then not stored in this file.
     pub key_in_credential_store: bool,
 }
 
@@ -78,8 +71,6 @@ pub fn load(app_handle: &AppHandle) -> ImmichConfig {
     config
 }
 
-/// Saves the settings. The API key goes into the credential store if there
-/// is one, and only otherwise into the file.
 pub fn save(app_handle: &AppHandle, config: &ImmichConfig) -> Result<(), String> {
     let path = config_path(app_handle)?;
     if let Some(parent) = path.parent() {
@@ -96,7 +87,6 @@ pub fn save(app_handle: &AppHandle, config: &ImmichConfig) -> Result<(), String>
     Ok(())
 }
 
-/// The file may hold the API key, so only the owner may read it.
 #[cfg(unix)]
 fn restrict_permissions(path: &Path) {
     use std::os::unix::fs::PermissionsExt;

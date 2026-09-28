@@ -1,9 +1,5 @@
-//! Turns the images of an Immich listing into local paths RapidRAW can edit.
-//!
-//! Which RAW belongs to an exported JPEG is what Immich's stacks are for: the
-//! export on top, the RAW below. RapidRAW creates exactly such stacks when it
-//! uploads an export, and opens the RAW of a stacked image instead of the
-//! image itself.
+//! Maps Immich listings to cache paths. An image stacked with a RAW - how
+//! exports are uploaded - resolves to the RAW.
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -14,9 +10,8 @@ use super::client::{Asset, ImmichClient, Stack};
 use super::config::ImmichConfig;
 use super::registry::{self, RemoteImage};
 
-/// Listings stop at this many images, newest first. RapidRAW reads the EXIF
-/// data of every image in a listing, which takes long beyond this; narrower
-/// listings come from the timeline or a filter.
+/// The library reads the EXIF data of every listed image, which gets slow
+/// beyond this. Larger sets are reached through the timeline or a filter.
 pub const LISTING_LIMIT: usize = 2000;
 
 #[derive(Debug, Clone)]
@@ -26,15 +21,12 @@ pub struct Resolved {
     pub file_modified_at: Option<String>,
 }
 
-/// Which images to list. Maps onto Immich's metadata search; everything left
-/// empty is not filtered on.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Filter {
     pub album_id: Option<String>,
-    /// Only images that are in no album.
     pub not_in_album: bool,
-    /// First and last day, as `YYYY-MM-DD`; both days are included.
+    /// `YYYY-MM-DD`, both days included.
     pub taken_from: Option<String>,
     pub taken_until: Option<String>,
     pub country: Option<String>,
@@ -79,7 +71,6 @@ impl Filter {
     }
 }
 
-/// Midnight (UTC) of `day` plus `offset` days, as Immich expects it.
 fn day_start(day: Option<&str>, offset: i64) -> Option<String> {
     let date = chrono::NaiveDate::parse_from_str(day?.trim(), "%Y-%m-%d").ok()?;
     let date = date.checked_add_signed(chrono::Duration::days(offset))?;
@@ -108,15 +99,12 @@ fn safe_file_name(name: &str) -> String {
     }
 }
 
-/// Where an asset's original is cached: one folder per asset, so the file
-/// keeps its name and its sidecar sits next to it.
 pub fn cache_path(asset: &Asset, cache_dir: &Path) -> PathBuf {
     cache_dir
         .join(&asset.id)
         .join(safe_file_name(&asset.original_file_name))
 }
 
-/// The stack each asset belongs to, for looking up its companions.
 struct StackIndex {
     stacks: Vec<Stack>,
     by_asset: HashMap<String, usize>,
@@ -132,7 +120,6 @@ impl StackIndex {
         Self { stacks, by_asset }
     }
 
-    /// The other assets in the stack of `asset`, leaving out trashed ones.
     fn companions<'a>(&'a self, asset: &'a Asset) -> impl Iterator<Item = &'a Asset> {
         self.by_asset
             .get(&asset.id)
@@ -142,8 +129,6 @@ impl StackIndex {
             .filter(move |a| a.id != asset.id && !a.is_trashed)
     }
 
-    /// The RAW to open for `listed`: a RAW stacked with it, preferring one
-    /// that is already cached; otherwise `listed` itself.
     fn source<'a>(&'a self, listed: &'a Asset, cache_dir: &Path) -> &'a Asset {
         if is_raw(listed) {
             return listed;
@@ -155,8 +140,6 @@ impl StackIndex {
     }
 }
 
-/// The images matching `filter`, and whether there were more than
-/// `LISTING_LIMIT`.
 pub async fn listing(
     client: &ImmichClient,
     config: &ImmichConfig,
@@ -171,8 +154,7 @@ pub async fn listing(
         .filter(|a| a.kind == "IMAGE" && !registry::is_trashing(&a.id))
         .collect();
 
-    // A few hundred stacks for a typical library, so one request for all of
-    // them is cheaper than asking per image.
+    // One request for all stacks is far cheaper than one per image.
     let stacks = if config.prefer_raw || filter.not_in_album {
         StackIndex::new(client.stacks().await?)
     } else {
@@ -229,8 +211,7 @@ fn resolve(
     resolved
 }
 
-/// A RAW is usually kept out of albums once its export is in one. Such a RAW
-/// is sorted, not forgotten, so it is left out of the images in no album.
+/// A RAW whose export is in an album counts as sorted.
 fn without_developed_raws(assets: Vec<Asset>, stacks: &StackIndex) -> Vec<Asset> {
     let unassigned: HashSet<&str> = assets.iter().map(|a| a.id.as_str()).collect();
     let developed: HashSet<String> = assets
