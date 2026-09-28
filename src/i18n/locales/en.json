@@ -910,6 +910,46 @@
       "watermarkImage": "Watermark Image"
     }
   },
+  "immich": {
+    "section": {
+      "title": "Immich",
+      "refresh": "Refresh albums",
+      "loading": "Loading albums…",
+      "empty": "No albums on the server.",
+      "error": "Immich is not reachable."
+    },
+    "settings": {
+      "category": "Immich",
+      "title": "Immich",
+      "description": "Browse the albums of your Immich server in the library and edit them directly. Originals are downloaded when you open them and edits are saved to Immich, so they are the same on every computer.",
+      "serverUrl": "Server address",
+      "serverUrlDesc": "The address you open Immich with in the browser.",
+      "apiKey": "API key",
+      "apiKeyDesc": "Create one in Immich under Account Settings → API Keys. It needs access to albums and assets, and permission to upload.",
+      "test": "Test connection",
+      "save": "Save",
+      "working": "Working…",
+      "saved": "Saved.",
+      "connected": "Connected as {{user}} (Immich {{version}})",
+      "behaviourTitle": "Editing",
+      "preferRaw": "Open the RAW of exported images",
+      "preferRawDesc": "If an album contains an export such as IMG_0042_edited.jpg, the RAW it came from is opened instead.",
+      "uploadExports": "Upload exports to Immich",
+      "uploadExportsDesc": "Exports of Immich images are added to the album they were opened from and stacked on top of their RAW.",
+      "replacePrevious": "Replace the previous export",
+      "replacePreviousDesc": "The export that was in the album before goes to Immich's trash, and the new one takes over its albums.",
+      "cacheLimit": "Cache size (GB)",
+      "cacheLimitDesc": "Downloaded originals beyond this size are removed, oldest first. Edits are not affected.",
+      "cacheDir": "Cache folder",
+      "cacheDirDesc": "Where downloaded originals are kept.",
+      "cacheDirDefault": "Default"
+    },
+    "toasts": {
+      "uploaded": "{{fileName}} uploaded to Immich",
+      "uploadFailed": "Upload of {{fileName}} to Immich failed: {{error}}",
+      "downloadFailed": "Could not download from Immich: {{error}}"
+    }
+  },
   "library": {
     "community": {
       "actionSave": "Save",
@@ -1066,7 +1106,7 @@
       "progress": "Importing... ({{current}}/{{total}})"
     },
     "items": {
-      "cloudPlaceholder": "Stored in iCloud — not downloaded",
+      "cloudPlaceholder": "Stored in the cloud — not downloaded yet",
       "collapseFolder": "Collapse Folder",
       "currentFolder": "Current Folder",
       "expandFolder": "Expand Folder",
