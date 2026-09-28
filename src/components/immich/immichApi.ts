@@ -40,6 +40,8 @@ export interface ImmichConfig {
   rawLeavesAlbum: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
+  /** Set by the backend when saving: where the API key ended up. */
+  keyInCredentialStore: boolean;
 }
 
 export interface ImmichAlbum {

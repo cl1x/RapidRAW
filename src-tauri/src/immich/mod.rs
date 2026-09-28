@@ -24,6 +24,7 @@ pub mod commands;
 mod config;
 mod registry;
 mod resolve;
+mod secrets;
 mod sync;
 
 use once_cell::sync::Lazy;
