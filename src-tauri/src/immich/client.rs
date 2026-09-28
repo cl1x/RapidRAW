@@ -362,13 +362,19 @@ impl ImmichClient {
             .send()
             .await
             .map_err(|e| format!("Immich is not reachable (edits): {e}"))?;
-        if response.status() == reqwest::StatusCode::NOT_FOUND {
+        let status = response.status();
+        if status == reqwest::StatusCode::NOT_FOUND {
             return Ok(None);
         }
-        if !response.status().is_success() {
+        if !status.is_success() {
+            let detail = response.text().await.unwrap_or_default();
+            // Immich 3.2 answers a missing key with 400 "... not found".
+            if status == reqwest::StatusCode::BAD_REQUEST && detail.contains("not found") {
+                return Ok(None);
+            }
             return Err(format!(
                 "Immich rejected reading edits (HTTP {})",
-                response.status().as_u16()
+                status.as_u16()
             ));
         }
         response
