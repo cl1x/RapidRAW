@@ -947,12 +947,30 @@
     }
   },
   "immich": {
+    "filter": {
+      "album": "Album",
+      "any": "Any",
+      "apply": "Show",
+      "city": "City",
+      "country": "Country",
+      "favoritesOnly": "Favorites only",
+      "from": "From",
+      "make": "Camera make",
+      "model": "Camera model",
+      "person": "Person",
+      "reset": "Reset filter",
+      "until": "Until"
+    },
     "section": {
+      "all": "All photos",
       "empty": "No albums on the server.",
       "error": "Immich is not reachable.",
+      "filter": "Filter…",
       "loading": "Loading albums…",
       "refresh": "Refresh albums",
-      "title": "Immich"
+      "title": "Immich",
+      "unassigned": "In no album",
+      "unassignedHint": "Drop images here to upload them without adding them to an album."
     },
     "settings": {
       "apiKey": "API key",
@@ -968,6 +986,8 @@
       "description": "Browse the albums of your Immich server in the library and edit them directly. Originals are downloaded when you open them and edits are saved to Immich, so they are the same on every computer.",
       "preferRaw": "Open the RAW of exported images",
       "preferRawDesc": "If an album contains an export such as IMG_0042_edited.jpg, the RAW it came from is opened instead.",
+      "rawLeavesAlbum": "Take the RAW out of the album",
+      "rawLeavesAlbumDesc": "Once its export is in the album, the RAW leaves it and stays in the stack below the export. Immich does not group stacks inside albums, so the album would show both.",
       "replacePrevious": "Replace the previous export",
       "replacePreviousDesc": "The export that was in the album before goes to Immich's trash, and the new one takes over its albums.",
       "save": "Save",
@@ -982,8 +1002,13 @@
     },
     "toasts": {
       "downloadFailed": "Could not download from Immich: {{error}}",
-      "uploaded": "{{fileName}} uploaded to Immich",
-      "uploadFailed": "Upload of {{fileName}} to Immich failed: {{error}}"
+      "transferFailed_one": "{{count}} image could not be added to Immich: {{error}}",
+      "transferFailed_other": "{{count}} images could not be added to Immich: {{error}}",
+      "transferred_one": "{{count}} image added to Immich",
+      "transferred_other": "{{count}} images added to Immich",
+      "transferring": "Adding to Immich… {{current}}/{{total}}",
+      "uploadFailed": "Upload of {{fileName}} to Immich failed: {{error}}",
+      "uploaded": "{{fileName}} uploaded to Immich"
     }
   },
   "library": {

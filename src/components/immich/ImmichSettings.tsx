@@ -160,6 +160,15 @@ export default function ImmichSettings() {
             />
           </Field>
 
+          <Field label={t('immich.settings.rawLeavesAlbum')} description={t('immich.settings.rawLeavesAlbumDesc')}>
+            <Switch
+              label={t('immich.settings.rawLeavesAlbum')}
+              checked={config.rawLeavesAlbum}
+              disabled={!config.uploadExports}
+              onChange={(rawLeavesAlbum) => update({ rawLeavesAlbum })}
+            />
+          </Field>
+
           <Field label={t('immich.settings.cacheLimit')} description={t('immich.settings.cacheLimitDesc')}>
             <Input
               type="number"
