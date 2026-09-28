@@ -151,10 +151,7 @@ export default function ImmichSettings() {
             />
           </Field>
 
-          <Field
-            label={t('immich.settings.replacePrevious')}
-            description={t('immich.settings.replacePreviousDesc')}
-          >
+          <Field label={t('immich.settings.replacePrevious')} description={t('immich.settings.replacePreviousDesc')}>
             <Switch
               label={t('immich.settings.replacePrevious')}
               checked={config.replacePreviousExport}
