@@ -2,7 +2,7 @@ use serde::Serialize;
 use serde_json::json;
 use tauri::AppHandle;
 
-use super::client::{Album, ImmichClient};
+use super::client::{Album, ImmichClient, Person};
 use super::config::{self, ImmichConfig};
 use super::{registry, reset_session, resolve, session};
 use crate::file_management::ImageFile;
@@ -51,18 +51,39 @@ pub async fn immich_list_albums(app_handle: AppHandle) -> Result<Vec<Album>, Str
     Ok(albums)
 }
 
-/// The images of an album as library entries. Downloaded originals are read
-/// like any album image; the others become cloud placeholders.
 #[tauri::command]
-pub async fn immich_get_album_images(
-    album_id: String,
+pub async fn immich_suggestions(
+    kind: String,
+    country: Option<String>,
+    make: Option<String>,
+    app_handle: AppHandle,
+) -> Result<Vec<String>, String> {
+    let session = session(&app_handle)?;
+    let mut values = session
+        .client
+        .suggestions(&kind, country.as_deref(), make.as_deref())
+        .await?;
+    values.sort_by_key(|v| v.to_lowercase());
+    Ok(values)
+}
+
+#[tauri::command]
+pub async fn immich_list_people(app_handle: AppHandle) -> Result<Vec<Person>, String> {
+    session(&app_handle)?.client.named_people().await
+}
+
+/// The images matching `filter` as library entries. Downloaded originals are
+/// read like any album image; the others become cloud placeholders.
+#[tauri::command]
+pub async fn immich_get_images(
+    filter: resolve::Filter,
     app_handle: AppHandle,
 ) -> Result<Vec<ImageFile>, String> {
     let session = session(&app_handle)?;
-    let resolved = resolve::album(
+    let resolved = resolve::listing(
         &session.client,
         &session.config,
-        &album_id,
+        &filter,
         &session.cache_dir,
     )
     .await?;
