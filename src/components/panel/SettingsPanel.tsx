@@ -47,6 +47,8 @@ import { useOsPlatform } from '../../hooks/useOsPlatform';
 import { useCloudUsage } from '../../hooks/useCloudUsage';
 import { open } from '@tauri-apps/plugin-shell';
 import { RotateCcw } from 'lucide-react';
+import { Images } from 'lucide-react';
+import ImmichSettings from '../immich/ImmichSettings';
 import { useUIStore } from '../../store/useUIStore';
 
 interface ConfirmModalState {
@@ -543,6 +545,7 @@ export default function SettingsPanel({
       { id: 'general', label: t('settings.categories.general'), icon: SlidersHorizontal },
       { id: 'processing', label: t('settings.categories.processing'), icon: Cpu },
       { id: 'shortcuts', label: t('settings.categories.shortcuts'), icon: Keyboard },
+      { id: 'immich', label: t('immich.settings.category'), icon: Images },
     ],
     [t],
   );
@@ -2389,6 +2392,17 @@ export default function SettingsPanel({
                 </motion.div>
               )}
 
+              {activeCategory === 'immich' && (
+                <motion.div
+                  key="immich"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <ImmichSettings />
+                </motion.div>
+              )}
               {activeCategory === 'shortcuts' && (
                 <motion.div
                   key="shortcuts"
