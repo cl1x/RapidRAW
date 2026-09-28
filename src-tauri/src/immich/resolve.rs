@@ -11,7 +11,7 @@ use std::sync::Mutex;
 
 use super::client::{Asset, ImmichClient};
 use super::config::ImmichConfig;
-use super::registry::RemoteImage;
+use super::registry::{self, RemoteImage};
 
 /// Parallel requests while looking up RAW originals.
 const LOOKUP_CONCURRENCY: usize = 12;
@@ -213,7 +213,10 @@ pub async fn listing(
     let mut query = filter.to_query();
     query["order"] = json!("desc");
     let (found, truncated) = client.search_up_to(query, Some(LISTING_LIMIT)).await?;
-    let mut assets: Vec<Asset> = found.into_iter().filter(|a| a.kind == "IMAGE").collect();
+    let mut assets: Vec<Asset> = found
+        .into_iter()
+        .filter(|a| a.kind == "IMAGE" && !registry::is_trashing(&a.id))
+        .collect();
 
     if filter.not_in_album {
         assets = without_developed_raws(client, assets).await;
@@ -248,6 +251,9 @@ pub async fn listing(
     for listed in &assets {
         let raw_candidates = raws.get(&listed.id).map(Vec::as_slice).unwrap_or_default();
         let source = choose(listed, raw_candidates, cache_dir);
+        if registry::is_trashing(&source.id) {
+            continue;
+        }
         let path = cache_path(source, cache_dir);
 
         if !crate::formats::is_supported_image_file(&path) || !seen.insert(path.clone()) {

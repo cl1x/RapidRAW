@@ -422,6 +422,10 @@ async fn upload_export(
 /// with the export shown in the album, since culling means the whole image -
 /// and drops it from the cache. Returns the other paths, which the caller
 /// deletes as usual. Virtual copies stay local: they are only a sidecar.
+///
+/// The request runs in the background so the interface does not wait for the
+/// server. Until it is done the images are left out of every listing; if it
+/// fails, they reappear and an `immich-trash` event reports the error.
 pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<String>, String> {
     let (remote, local): (Vec<_>, Vec<_>) = paths.into_iter().partition(|p| {
         !p.contains("?vc=")
@@ -442,21 +446,35 @@ pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<St
                     ids.push(id);
                 }
             }
+            registry::remove(&source);
             sources.push(source);
         }
     }
-    tauri::async_runtime::block_on(session.client.trash(&ids))?;
+    registry::mark_trashing(&ids);
 
-    for source in sources {
-        registry::remove(&source);
-        // One folder per asset in the cache; never touch anything outside it.
-        if let Some(folder) = source.parent()
-            && folder.parent() == Some(session.cache_dir.as_path())
-        {
-            let _ = std::fs::remove_dir_all(folder);
+    let app_handle = app_handle.clone();
+    tauri::async_runtime::spawn(async move {
+        let result = session.client.trash(&ids).await;
+        registry::done_trashing(&ids);
+        match &result {
+            Ok(()) => {
+                for source in &sources {
+                    // One folder per asset in the cache; never touch anything
+                    // outside it.
+                    if let Some(folder) = source.parent()
+                        && folder.parent() == Some(session.cache_dir.as_path())
+                    {
+                        let _ = std::fs::remove_dir_all(folder);
+                    }
+                }
+            }
+            Err(e) => {
+                log::error!("Could not move images to Immich's trash: {e}");
+                let _ = app_handle.emit("immich-trash", json!({ "state": "error", "error": e }));
+            }
         }
-    }
-    let _ = app_handle.emit("immich-library-changed", json!({}));
+        let _ = app_handle.emit("immich-library-changed", json!({}));
+    });
     Ok(local)
 }
 

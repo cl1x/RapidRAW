@@ -6,7 +6,7 @@
 //! an export should be uploaded.
 
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
@@ -60,6 +60,24 @@ pub fn is_placeholder(path: &Path) -> bool {
 
 pub fn remove(path: &Path) {
     ENTRIES.write().unwrap().remove(path);
+}
+
+/// Assets on their way to Immich's trash; listings leave them out meanwhile.
+static TRASHING: Lazy<RwLock<HashSet<String>>> = Lazy::new(|| RwLock::new(HashSet::new()));
+
+pub fn mark_trashing(asset_ids: &[String]) {
+    TRASHING.write().unwrap().extend(asset_ids.iter().cloned());
+}
+
+pub fn done_trashing(asset_ids: &[String]) {
+    let mut trashing = TRASHING.write().unwrap();
+    for id in asset_ids {
+        trashing.remove(id);
+    }
+}
+
+pub fn is_trashing(asset_id: &str) -> bool {
+    TRASHING.read().unwrap().contains(asset_id)
 }
 
 pub fn clear() {

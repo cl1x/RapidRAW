@@ -106,7 +106,7 @@ pub async fn immich_get_images(
         if item.path.exists() {
             local_paths.push(path);
         } else {
-            placeholders.push(placeholder_file(&path, item.file_modified_at.as_deref())?);
+            placeholders.push(placeholder_file(&path, item.file_modified_at.as_deref()));
         }
         registry::insert(item.path, item.image);
     }
@@ -121,22 +121,10 @@ pub async fn immich_get_images(
     Ok(files)
 }
 
-fn placeholder_file(path: &str, file_modified_at: Option<&str>) -> Result<ImageFile, String> {
+fn placeholder_file(path: &str, file_modified_at: Option<&str>) -> ImageFile {
     let modified = file_modified_at
         .and_then(|t| chrono::DateTime::parse_from_rfc3339(t).ok())
         .map(|t| t.timestamp().max(0) as u64)
         .unwrap_or(0);
-    serde_json::from_value(json!({
-        "path": path,
-        "modified": modified,
-        "is_edited": false,
-        "rating": 0,
-        "tags": null,
-        "exif": null,
-        "is_virtual_copy": false,
-        "is_cloud_placeholder": true,
-        "is_raw": crate::formats::is_raw_file(path),
-        "group_id": null,
-    }))
-    .map_err(|e| e.to_string())
+    ImageFile::placeholder(path.to_string(), modified)
 }
