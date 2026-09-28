@@ -59,6 +59,12 @@ pub struct User {
     pub email: String,
 }
 
+/// An Immich stack: an export on top of its RAW, or a burst of shots.
+#[derive(Deserialize, Debug, Clone)]
+pub struct Stack {
+    pub assets: Vec<Asset>,
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TimelineMonth {
@@ -240,13 +246,8 @@ impl ImmichClient {
         Ok(people)
     }
 
-    /// Pages through `/search/metadata` and returns every hit.
-    pub async fn search(&self, query: Value) -> Result<Vec<Asset>, String> {
-        Ok(self.search_up_to(query, None).await?.0)
-    }
-
-    /// Like `search`, but stops after `limit` hits. The second value tells
-    /// whether there were more.
+    /// Pages through `/search/metadata`, stopping after `limit` hits. The
+    /// second value tells whether there were more.
     pub async fn search_up_to(
         &self,
         query: Value,
@@ -280,6 +281,11 @@ impl ImmichClient {
                 _ => return Ok((found, false)),
             }
         }
+    }
+
+    pub async fn stacks(&self) -> Result<Vec<Stack>, String> {
+        self.json(self.request(Method::GET, "/stacks"), "stacks")
+            .await
     }
 
     /// Months with photos, newest first, as Immich's timeline groups them.

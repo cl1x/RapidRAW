@@ -8,7 +8,7 @@ use tauri::{AppHandle, Manager};
 pub struct ImmichConfig {
     pub server_url: String,
     pub api_key: String,
-    /// Open the RAW behind an exported JPEG instead of the JPEG itself.
+    /// Open the RAW stacked under an image instead of the image itself.
     pub prefer_raw: bool,
     /// Upload exports of Immich images back to the album they came from.
     pub upload_exports: bool,
