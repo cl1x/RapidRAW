@@ -985,6 +985,8 @@
       "category": "Immich",
       "connected": "Verbunden als {{user}} (Immich {{version}})",
       "description": "Zeigt die Alben deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen und Bearbeitungen in Immich gespeichert – auf jedem Rechner derselbe Stand.",
+      "keyInFile": "In einer Datei gespeichert, die nur du lesen kannst: Es ist kein Schlüsselbund erreichbar. Unter KDE in den Einstellungen der KDE-Brieftasche die Secret-Service-Schnittstelle einschalten und erneut speichern.",
+      "keyInStore": "Im Schlüsselbund des Systems gespeichert.",
       "preferRaw": "Bei Stapeln das RAW öffnen",
       "preferRawDesc": "Liegt ein Bild im Stapel mit einem RAW – so legt RapidRAW seine Exporte ab –, wird stattdessen das RAW geöffnet.",
       "rawLeavesAlbum": "RAW aus dem Album nehmen",
