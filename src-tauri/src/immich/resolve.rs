@@ -144,8 +144,14 @@ pub async fn album(
     // Look up RAWs for everything that is not one already. An album that
     // holds both the RAW and its export shows the RAW once.
     let raws: HashMap<String, Vec<Asset>> = if config.prefer_raw {
-        stream::iter(assets.iter().filter(|a| !is_raw(a)))
-            .map(|asset| async move { (asset.id.clone(), find_raws(client, asset).await) })
+        // Owned items: a stream over borrowed assets cannot be proven `Send`
+        // for every lifetime, which Tauri requires of async commands.
+        let lookups: Vec<Asset> = assets.iter().filter(|a| !is_raw(a)).cloned().collect();
+        stream::iter(lookups)
+            .map(|asset| async move {
+                let raws = find_raws(client, &asset).await;
+                (asset.id, raws)
+            })
             .buffer_unordered(LOOKUP_CONCURRENCY)
             .collect()
             .await
@@ -185,7 +191,10 @@ mod tests {
         assert_eq!(source_stem("DSC02193_edited.jpg"), "DSC02193");
         assert_eq!(source_stem("DSC02193_Edited_2.jpg"), "DSC02193");
         assert_eq!(source_stem("IMG_1234.JPG"), "IMG_1234");
-        assert_eq!(source_stem("holiday_edited_final.jpg"), "holiday_edited_final");
+        assert_eq!(
+            source_stem("holiday_edited_final.jpg"),
+            "holiday_edited_final"
+        );
     }
 
     #[test]

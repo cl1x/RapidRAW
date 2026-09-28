@@ -113,7 +113,10 @@ pub async fn ensure_local(app_handle: &AppHandle, path: &Path) -> Result<(), Str
     // Edits may have been made on another machine. Not being able to fetch
     // them must not keep an image from opening, though.
     if let Err(e) = sync::pull(&session.client, &entry.asset_id, path).await {
-        log::warn!("Could not fetch edits of {} from Immich: {e}", path.display());
+        log::warn!(
+            "Could not fetch edits of {} from Immich: {e}",
+            path.display()
+        );
     }
     Ok(())
 }
@@ -145,7 +148,10 @@ async fn download(
         .await
         .map_err(|e| format!("Cannot create '{}': {e}", parent.display()))?;
 
-    let _ = app_handle.emit("immich-download", json!({ "path": path, "state": "started" }));
+    let _ = app_handle.emit(
+        "immich-download",
+        json!({ "path": path, "state": "started" }),
+    );
     // Download next to the target and rename, so an interrupted download
     // never leaves a half file that looks complete.
     let partial = parent.join(format!(".{asset_id}.part"));

@@ -72,7 +72,10 @@ pub async fn pull(client: &ImmichClient, asset_id: &str, source: &Path) -> Resul
         return Ok(());
     }
     if has_local_changes(source) {
-        log::info!("Keeping local edits of {} over newer ones in Immich", source.display());
+        log::info!(
+            "Keeping local edits of {} over newer ones in Immich",
+            source.display()
+        );
         return Ok(());
     }
 
