@@ -1843,7 +1843,9 @@ fn generate_single_thumbnail_and_cache(
         (0, false, Vec::new())
     };
 
-    if let Some(remote) = crate::immich::placeholder_thumbnail(app_handle, path_str, thumb_cache_dir) {
+    if let Some(remote) =
+        crate::immich::placeholder_thumbnail(app_handle, path_str, thumb_cache_dir)
+    {
         return remote.map(|(small, medium)| (small, medium, rating, is_edited));
     }
 

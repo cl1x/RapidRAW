@@ -14,14 +14,11 @@ pub struct Asset {
     pub id: String,
     #[serde(rename = "type")]
     pub kind: String,
-    pub original_path: String,
     pub original_file_name: String,
     #[serde(default)]
     pub file_modified_at: Option<String>,
     #[serde(default)]
     pub is_trashed: bool,
-    #[serde(default)]
-    pub is_favorite: bool,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -41,12 +38,11 @@ pub struct Album {
     pub shared: bool,
 }
 
+/// Immich answers `created` or `duplicate` - it recognises identical files by
+/// checksum and then returns the existing asset's id.
 #[derive(Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct UploadResult {
     pub id: String,
-    /// `created` or `duplicate` - Immich recognises identical files by checksum.
-    pub status: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -80,12 +76,6 @@ struct SearchPage {
 #[derive(Deserialize)]
 struct SearchResponse {
     assets: SearchPage,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Stack {
-    pub id: String,
 }
 
 pub struct ImmichClient {
@@ -129,10 +119,17 @@ impl ImmichClient {
         }
         let detail = response.text().await.unwrap_or_default();
         let detail: String = detail.chars().take(300).collect();
-        Err(format!("Immich rejected {what} (HTTP {}): {detail}", status.as_u16()))
+        Err(format!(
+            "Immich rejected {what} (HTTP {}): {detail}",
+            status.as_u16()
+        ))
     }
 
-    async fn json<T: DeserializeOwned>(&self, builder: RequestBuilder, what: &str) -> Result<T, String> {
+    async fn json<T: DeserializeOwned>(
+        &self,
+        builder: RequestBuilder,
+        what: &str,
+    ) -> Result<T, String> {
         self.send(builder, what)
             .await?
             .json::<T>()
@@ -142,18 +139,23 @@ impl ImmichClient {
 
     pub async fn version(&self) -> Result<String, String> {
         let v: Version = self
-            .json(self.request(Method::GET, "/server/version"), "server version")
+            .json(
+                self.request(Method::GET, "/server/version"),
+                "server version",
+            )
             .await?;
         Ok(format!("{}.{}.{}", v.major, v.minor, v.patch))
     }
 
     pub async fn me(&self) -> Result<User, String> {
-        self.json(self.request(Method::GET, "/users/me"), "user").await
+        self.json(self.request(Method::GET, "/users/me"), "user")
+            .await
     }
 
     /// Owned albums and albums shared with the user.
     pub async fn albums(&self) -> Result<Vec<Album>, String> {
-        self.json(self.request(Method::GET, "/albums"), "albums").await
+        self.json(self.request(Method::GET, "/albums"), "albums")
+            .await
     }
 
     pub async fn albums_containing(&self, asset_id: &str) -> Result<Vec<Album>, String> {
@@ -175,7 +177,10 @@ impl ImmichClient {
                 body["size"] = json!(1000);
             }
             let result: SearchResponse = self
-                .json(self.request(Method::POST, "/search/metadata").json(&body), "search")
+                .json(
+                    self.request(Method::POST, "/search/metadata").json(&body),
+                    "search",
+                )
                 .await?;
             found.extend(result.assets.items);
             match result.assets.next_page.and_then(|p| p.parse().ok()) {
@@ -210,7 +215,10 @@ impl ImmichClient {
     pub async fn thumbnail(&self, asset_id: &str, size: &str) -> Result<Vec<u8>, String> {
         let response = self
             .send(
-                self.request(Method::GET, &format!("/assets/{asset_id}/thumbnail?size={size}")),
+                self.request(
+                    Method::GET,
+                    &format!("/assets/{asset_id}/thumbnail?size={size}"),
+                ),
                 "thumbnail",
             )
             .await?;
@@ -243,13 +251,20 @@ impl ImmichClient {
             .text("fileModifiedAt", modified_at.to_string())
             .text("filename", file_name)
             .part("assetData", part);
-        self.json(self.request(Method::POST, "/assets").multipart(form), "upload")
-            .await
+        self.json(
+            self.request(Method::POST, "/assets").multipart(form),
+            "upload",
+        )
+        .await
     }
 
     /// A key/value entry Immich stores alongside an asset, with the time it was
     /// last written. `None` if the asset has no entry under `key`.
-    pub async fn metadata(&self, asset_id: &str, key: &str) -> Result<Option<MetadataEntry>, String> {
+    pub async fn metadata(
+        &self,
+        asset_id: &str,
+        key: &str,
+    ) -> Result<Option<MetadataEntry>, String> {
         let response = self
             .request(Method::GET, &format!("/assets/{asset_id}/metadata/{key}"))
             .send()
@@ -259,7 +274,10 @@ impl ImmichClient {
             return Ok(None);
         }
         if !response.status().is_success() {
-            return Err(format!("Immich rejected reading edits (HTTP {})", response.status().as_u16()));
+            return Err(format!(
+                "Immich rejected reading edits (HTTP {})",
+                response.status().as_u16()
+            ));
         }
         response
             .json::<MetadataEntry>()
@@ -269,7 +287,12 @@ impl ImmichClient {
     }
 
     /// Stores `value` under `key` and returns the new update time.
-    pub async fn set_metadata(&self, asset_id: &str, key: &str, value: &Value) -> Result<String, String> {
+    pub async fn set_metadata(
+        &self,
+        asset_id: &str,
+        key: &str,
+        value: &Value,
+    ) -> Result<String, String> {
         let entries: Vec<MetadataEntry> = self
             .json(
                 self.request(Method::PUT, &format!("/assets/{asset_id}/metadata"))
@@ -296,19 +319,11 @@ impl ImmichClient {
 
     /// The first id becomes the primary asset. Assets already stacked are
     /// merged into the new stack by Immich.
-    pub async fn create_stack(&self, asset_ids: &[String]) -> Result<Stack, String> {
-        self.json(
+    pub async fn create_stack(&self, asset_ids: &[String]) -> Result<(), String> {
+        self.send(
             self.request(Method::POST, "/stacks")
                 .json(&json!({ "assetIds": asset_ids })),
             "stacking",
-        )
-        .await
-    }
-
-    pub async fn update_asset(&self, asset_id: &str, fields: Value) -> Result<(), String> {
-        self.send(
-            self.request(Method::PUT, &format!("/assets/{asset_id}")).json(&fields),
-            "updating asset",
         )
         .await
         .map(|_| ())

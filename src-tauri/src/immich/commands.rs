@@ -4,7 +4,7 @@ use tauri::AppHandle;
 
 use super::client::{Album, ImmichClient};
 use super::config::{self, ImmichConfig};
-use super::{registry, resolve, reset_session, session};
+use super::{registry, reset_session, resolve, session};
 use crate::file_management::ImageFile;
 
 #[derive(Serialize)]
@@ -29,7 +29,10 @@ pub fn immich_save_config(config: ImmichConfig, app_handle: AppHandle) -> Result
 
 /// Checks address and key before they are saved.
 #[tauri::command]
-pub async fn immich_test_connection(server_url: String, api_key: String) -> Result<ConnectionInfo, String> {
+pub async fn immich_test_connection(
+    server_url: String,
+    api_key: String,
+) -> Result<ConnectionInfo, String> {
     let client = ImmichClient::new(&server_url, &api_key)?;
     let version = client.version().await?;
     let user = client.me().await?;
@@ -51,9 +54,18 @@ pub async fn immich_list_albums(app_handle: AppHandle) -> Result<Vec<Album>, Str
 /// The images of an album as library entries. Downloaded originals are read
 /// like any album image; the others become cloud placeholders.
 #[tauri::command]
-pub async fn immich_get_album_images(album_id: String, app_handle: AppHandle) -> Result<Vec<ImageFile>, String> {
+pub async fn immich_get_album_images(
+    album_id: String,
+    app_handle: AppHandle,
+) -> Result<Vec<ImageFile>, String> {
     let session = session(&app_handle)?;
-    let resolved = resolve::album(&session.client, &session.config, &album_id, &session.cache_dir).await?;
+    let resolved = resolve::album(
+        &session.client,
+        &session.config,
+        &album_id,
+        &session.cache_dir,
+    )
+    .await?;
 
     let mut local_paths = Vec::new();
     let mut placeholders = Vec::new();
