@@ -2265,7 +2265,9 @@ pub fn run() {
             immich::commands::immich_save_config,
             immich::commands::immich_test_connection,
             immich::commands::immich_list_albums,
-            immich::commands::immich_get_album_images,
+            immich::commands::immich_get_images,
+            immich::commands::immich_suggestions,
+            immich::commands::immich_list_people,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

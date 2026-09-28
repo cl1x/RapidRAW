@@ -14,6 +14,9 @@ pub struct ImmichConfig {
     pub upload_exports: bool,
     /// Move the previously uploaded export of the same image to Immich's trash.
     pub replace_previous_export: bool,
+    /// Take the RAW out of the album once its export is in it. Immich does not
+    /// collapse stacks inside albums, so the album would show both.
+    pub raw_leaves_album: bool,
     /// Where originals are cached. Defaults to the app cache folder.
     pub cache_dir: Option<String>,
     /// Downloaded originals beyond this size are removed, oldest first.
@@ -28,6 +31,7 @@ impl Default for ImmichConfig {
             prefer_raw: true,
             upload_exports: true,
             replace_previous_export: false,
+            raw_leaves_album: true,
             cache_dir: None,
             cache_limit_gb: 20,
         }
