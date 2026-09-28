@@ -972,6 +972,7 @@
       "transferred_one": "{{count}} image added to Immich",
       "transferred_other": "{{count}} images added to Immich",
       "transferring": "Adding to Immich… {{current}}/{{total}}",
+      "trashFailed": "Could not move the images to Immich's trash: {{error}}",
       "truncated": "Showing the newest {{limit}} images. Use the timeline or a filter to see the others.",
       "uploadFailed": "Upload of {{fileName}} to Immich failed: {{error}}",
       "uploaded": "{{fileName}} uploaded to Immich"

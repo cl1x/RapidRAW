@@ -972,6 +972,7 @@
       "transferred_one": "{{count}} Bild zu Immich hinzugefügt",
       "transferred_other": "{{count}} Bilder zu Immich hinzugefügt",
       "transferring": "Wird zu Immich hinzugefügt… {{current}}/{{total}}",
+      "trashFailed": "Die Bilder konnten nicht in den Papierkorb von Immich verschoben werden: {{error}}",
       "truncated": "Es werden die neuesten {{limit}} Bilder gezeigt. Über die Zeitleiste oder einen Filter kommst du an die übrigen.",
       "uploadFailed": "Hochladen von {{fileName}} zu Immich fehlgeschlagen: {{error}}",
       "uploaded": "{{fileName}} zu Immich hochgeladen"

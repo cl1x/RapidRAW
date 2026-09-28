@@ -292,6 +292,26 @@ pub struct ImageFile {
     group_id: Option<String>,
 }
 
+impl ImageFile {
+    /// A library entry for a file that is not on disk yet, such as an image of
+    /// a remote library that is downloaded when it is opened.
+    pub fn placeholder(path: String, modified: u64) -> Self {
+        let is_raw = crate::formats::is_raw_file(&path);
+        Self {
+            path,
+            modified,
+            is_edited: false,
+            rating: 0,
+            tags: None,
+            exif: None,
+            is_virtual_copy: false,
+            is_cloud_placeholder: true,
+            is_raw,
+            group_id: None,
+        }
+    }
+}
+
 fn make_group_key(source_path: &Path) -> String {
     let parent = source_path.parent().unwrap_or(Path::new(""));
     let stem = source_path.file_stem().unwrap_or_default();
