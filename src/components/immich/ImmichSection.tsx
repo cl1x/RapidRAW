@@ -2,7 +2,18 @@ import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import clsx from 'clsx';
 import { useDroppable } from '@dnd-kit/core';
-import { Album as AlbumIcon, Images, Inbox, MoveRight, RefreshCw, SlidersHorizontal, Users } from 'lucide-react';
+import {
+  Album as AlbumIcon,
+  CalendarDays,
+  ChevronDown,
+  ChevronRight,
+  History,
+  Inbox,
+  MoveRight,
+  RefreshCw,
+  SlidersHorizontal,
+  Users,
+} from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -11,10 +22,10 @@ import { TextColors, TextVariants, TextWeights } from '../../types/typography';
 import { useUIStore } from '../../store/useUIStore';
 import {
   filterToAlbumId,
-  IMMICH_ALL_ID,
   IMMICH_UNASSIGNED_ID,
   ImmichFilter,
   isImmichFilterId,
+  monthFilter,
   toImmichAlbumId,
 } from './immichApi';
 import ImmichFilterForm, { describeFilter } from './ImmichFilterForm';
@@ -97,12 +108,7 @@ export default function ImmichSection({
             <div className="pt-1 pb-2">
               {!query && (
                 <>
-                  <ImmichRow
-                    icon={Images}
-                    label={t('immich.section.all')}
-                    isSelected={selectedAlbumId === IMMICH_ALL_ID}
-                    onSelect={() => onSelectAlbum(IMMICH_ALL_ID, t('immich.section.all'), [])}
-                  />
+                  <ImmichTimeline selectedAlbumId={selectedAlbumId} onSelectAlbum={onSelectAlbum} />
                   <ImmichRow
                     icon={Inbox}
                     label={t('immich.section.unassigned')}
@@ -181,6 +187,83 @@ export default function ImmichSection({
 }
 
 /**
+ * Years and months with photos, like Immich's timeline. A month is a listing
+ * of manageable size, where "all photos" at once would be tens of thousands.
+ */
+function ImmichTimeline({
+  selectedAlbumId,
+  onSelectAlbum,
+}: {
+  selectedAlbumId: string | null;
+  onSelectAlbum(albumId: string, albumName: string, images: string[]): void;
+}) {
+  const { t, i18n } = useTranslation();
+  const { timeline, loadTimeline } = useImmichStore(
+    useShallow((state) => ({ timeline: state.timeline, loadTimeline: state.loadTimeline })),
+  );
+  const [isOpen, setOpen] = useState(false);
+  const [openYear, setOpenYear] = useState<string | null>(null);
+
+  const years = useMemo(() => {
+    const byYear = new Map<string, { month: string; count: number }[]>();
+    for (const bucket of timeline) {
+      const year = bucket.timeBucket.slice(0, 4);
+      byYear.set(year, [...(byYear.get(year) ?? []), { month: bucket.timeBucket, count: bucket.count }]);
+    }
+    return [...byYear.entries()];
+  }, [timeline]);
+
+  const monthName = (bucket: string) =>
+    new Date(`${bucket.slice(0, 7)}-01T00:00:00`).toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
+
+  const toggle = () => {
+    if (!isOpen) loadTimeline();
+    setOpen(!isOpen);
+  };
+
+  return (
+    <>
+      <ImmichRow
+        icon={History}
+        label={t('immich.section.timeline')}
+        isSelected={false}
+        onSelect={toggle}
+        trailing={isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+      />
+      {isOpen &&
+        years.map(([year, months]) => (
+          <div key={year} className="pl-4">
+            <ImmichRow
+              icon={CalendarDays}
+              label={year}
+              count={months.reduce((sum, m) => sum + m.count, 0)}
+              showCount
+              isSelected={false}
+              onSelect={() => setOpenYear(openYear === year ? null : year)}
+            />
+            {openYear === year &&
+              months.map(({ month, count }) => {
+                const id = filterToAlbumId(monthFilter(month));
+                return (
+                  <div key={month} className="pl-4">
+                    <ImmichRow
+                      icon={CalendarDays}
+                      label={monthName(month)}
+                      count={count}
+                      showCount
+                      isSelected={selectedAlbumId === id}
+                      onSelect={() => onSelectAlbum(id, monthName(month), [])}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+        ))}
+    </>
+  );
+}
+
+/**
  * One entry of the section. With a `dropId`, library images can be dropped on
  * it; the library's drop handler passes them to `add_to_album` like for local
  * albums, and the backend takes it from there.
@@ -194,6 +277,7 @@ function ImmichRow({
   isSelected,
   onSelect,
   tooltip,
+  trailing,
 }: {
   icon: LucideIcon;
   label: string;
@@ -203,6 +287,7 @@ function ImmichRow({
   isSelected: boolean;
   onSelect(): void;
   tooltip?: string;
+  trailing?: ReactNode;
 }) {
   const isLayoutDragging = useUIStore((state) => !!state.activeLayoutDragItem);
   const { setNodeRef, isOver, active } = useDroppable({
@@ -244,7 +329,9 @@ function ImmichRow({
             {count}
           </Text>
         )}
-        <div className="w-5 h-5 shrink-0" aria-hidden="true" />
+        <div className="w-5 h-5 shrink-0 flex items-center justify-center text-text-secondary" aria-hidden="true">
+          {trailing}
+        </div>
       </div>
     </Text>
   );

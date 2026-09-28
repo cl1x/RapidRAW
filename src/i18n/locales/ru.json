@@ -1014,6 +1014,7 @@
       "filter": "",
       "loading": "",
       "refresh": "",
+      "timeline": "",
       "title": "",
       "unassigned": "",
       "unassignedHint": ""
@@ -1053,6 +1054,7 @@
       "transferred_one": "",
       "transferred_other": "",
       "transferring": "",
+      "truncated": "",
       "uploadFailed": "",
       "uploaded": ""
     }

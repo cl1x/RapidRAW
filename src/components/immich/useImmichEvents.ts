@@ -67,6 +67,9 @@ export function useImmichEvents(refreshLibrary: () => void) {
           toast.success(t('immich.toasts.transferred', { count: payload.added }));
         }
       }),
+      listen<{ limit: number }>('immich-listing-truncated', ({ payload }) => {
+        toast.info(t('immich.toasts.truncated', { limit: payload.limit }));
+      }),
       listen('immich-library-changed', () => {
         useImmichStore.getState().loadAlbums();
         refreshRef.current();
