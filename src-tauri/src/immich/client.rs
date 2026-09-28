@@ -158,7 +158,7 @@ impl ImmichClient {
 
     pub async fn albums_containing(&self, asset_id: &str) -> Result<Vec<Album>, String> {
         self.json(
-            self.request(Method::GET, "/albums").query(&[("assetId", asset_id)]),
+            self.request(Method::GET, &format!("/albums?assetId={asset_id}")),
             "albums of asset",
         )
         .await
@@ -210,8 +210,7 @@ impl ImmichClient {
     pub async fn thumbnail(&self, asset_id: &str, size: &str) -> Result<Vec<u8>, String> {
         let response = self
             .send(
-                self.request(Method::GET, &format!("/assets/{asset_id}/thumbnail"))
-                    .query(&[("size", size)]),
+                self.request(Method::GET, &format!("/assets/{asset_id}/thumbnail?size={size}")),
                 "thumbnail",
             )
             .await?;
