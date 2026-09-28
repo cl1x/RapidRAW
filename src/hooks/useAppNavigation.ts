@@ -12,6 +12,7 @@ import { Invokes, LibraryViewMode, ImageFile } from '../components/ui/AppPropert
 import { INITIAL_ADJUSTMENTS, normalizeLoadedAdjustments } from '../utils/adjustments';
 import { globalImageCache } from '../utils/ImageLRUCache';
 import { debouncedSave, debouncedSetHistory } from './useEditorActions';
+import { getImmichAlbumImages, isImmichAlbumId } from '../components/immich/immichApi';
 
 export interface AppNavigationProps {
   clearThumbnailQueue: () => void;
@@ -453,7 +454,9 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
       });
 
       try {
-        const files: ImageFile[] = await invoke(Invokes.GetAlbumImages, { paths: imagePaths });
+        const files: ImageFile[] = isImmichAlbumId(albumId)
+          ? await getImmichAlbumImages(albumId)
+          : await invoke(Invokes.GetAlbumImages, { paths: imagePaths });
 
         const initialRatings: Record<string, number> = {};
         files.forEach((f) => {
@@ -635,6 +638,8 @@ export function useAppNavigation({ clearThumbnailQueue, refs }: AppNavigationPro
             const album = findObj(albumTree);
             if (album) {
               await handleSelectAlbum(album.id, album.name, album.images);
+            } else if (isImmichAlbumId(activeAlbumId)) {
+              await handleSelectAlbum(activeAlbumId, pathToSelect.slice('Album: '.length), []);
             } else {
               await handleSelectSubfolder(rootFolders[0], false, undefined, false);
             }

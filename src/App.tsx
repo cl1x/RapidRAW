@@ -77,6 +77,8 @@ import {
 
 import ImageProcessingManager from './components/managers/ImageProcessingManager';
 import ImageLoaderManager from './components/managers/ImageLoaderManager';
+import { isImmichAlbumId } from './components/immich/immichApi';
+import { useImmichEvents } from './components/immich/useImmichEvents';
 
 const CLERK_PUBLISHABLE_KEY = 'pk_test_YnJpZWYtc2Vhc25haWwtMTIuY2xlcmsuYWNjb3VudHMuZGV2JA'; // local dev key
 
@@ -392,6 +394,8 @@ function App() {
           };
           const album = findObj(albumTree);
           if (album) await handleSelectAlbum(album.id, album.name, album.images, true);
+          else if (isImmichAlbumId(activeAlbumId))
+            await handleSelectAlbum(activeAlbumId, currentFolderPath.slice('Album: '.length), [], true);
         }
       } else {
         await handleSelectSubfolder(currentFolderPath, false, undefined, false, true);
@@ -447,6 +451,8 @@ function App() {
     executeDelete,
     handleTogglePinFolder,
   });
+
+  useImmichEvents();
 
   useTauriListeners({
     refreshAllFolderTrees,
