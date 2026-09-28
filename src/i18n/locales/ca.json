@@ -910,6 +910,46 @@
       "watermarkImage": "Imatge de la marca d'aigua"
     }
   },
+  "immich": {
+    "section": {
+      "empty": "",
+      "error": "",
+      "loading": "",
+      "refresh": "",
+      "title": ""
+    },
+    "settings": {
+      "apiKey": "",
+      "apiKeyDesc": "",
+      "behaviourTitle": "",
+      "cacheDir": "",
+      "cacheDirDefault": "",
+      "cacheDirDesc": "",
+      "cacheLimit": "",
+      "cacheLimitDesc": "",
+      "category": "",
+      "connected": "",
+      "description": "",
+      "preferRaw": "",
+      "preferRawDesc": "",
+      "replacePrevious": "",
+      "replacePreviousDesc": "",
+      "save": "",
+      "saved": "",
+      "serverUrl": "",
+      "serverUrlDesc": "",
+      "test": "",
+      "title": "",
+      "uploadExports": "",
+      "uploadExportsDesc": "",
+      "working": ""
+    },
+    "toasts": {
+      "downloadFailed": "",
+      "uploaded": "",
+      "uploadFailed": ""
+    }
+  },
   "library": {
     "community": {
       "actionSave": "Desar",
