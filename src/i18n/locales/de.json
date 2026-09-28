@@ -968,6 +968,7 @@
       "filter": "Filtern…",
       "loading": "Alben werden geladen…",
       "refresh": "Alben aktualisieren",
+      "timeline": "Zeitleiste",
       "title": "Immich",
       "unassigned": "Ohne Album",
       "unassignedHint": "Bilder hierher ziehen, um sie ohne Album hochzuladen."
@@ -1007,6 +1008,7 @@
       "transferred_one": "{{count}} Bild zu Immich hinzugefügt",
       "transferred_other": "{{count}} Bilder zu Immich hinzugefügt",
       "transferring": "Wird zu Immich hinzugefügt… {{current}}/{{total}}",
+      "truncated": "Es werden die neuesten {{limit}} Bilder gezeigt. Über die Zeitleiste oder einen Filter kommst du an die übrigen.",
       "uploadFailed": "Hochladen von {{fileName}} zu Immich fehlgeschlagen: {{error}}",
       "uploaded": "{{fileName}} zu Immich hochgeladen"
     }

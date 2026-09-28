@@ -1,11 +1,21 @@
 import { create } from 'zustand';
-import { getImmichConfig, ImmichAlbum, ImmichFilter, listImmichAlbums } from './immichApi';
+import {
+  getImmichConfig,
+  ImmichAlbum,
+  ImmichFilter,
+  ImmichTimelineMonth,
+  listImmichAlbums,
+  listImmichTimeline,
+} from './immichApi';
 
 interface ImmichState {
   isConfigured: boolean;
   albums: ImmichAlbum[];
   isLoading: boolean;
   error: string | null;
+  /** Months with photos, newest first; loaded when the timeline is opened. */
+  timeline: ImmichTimelineMonth[];
+  loadTimeline(): Promise<void>;
   /** The filter last used in the sidebar, kept while the app runs. */
   filter: ImmichFilter;
   setFilter(filter: ImmichFilter): void;
@@ -19,6 +29,14 @@ export const useImmichStore = create<ImmichState>((set, get) => ({
   albums: [],
   isLoading: false,
   error: null,
+  timeline: [],
+  loadTimeline: async () => {
+    try {
+      set({ timeline: await listImmichTimeline() });
+    } catch (err) {
+      console.error('Failed to load the Immich timeline:', err);
+    }
+  },
   filter: {},
   setFilter: (filter) => set({ filter }),
 

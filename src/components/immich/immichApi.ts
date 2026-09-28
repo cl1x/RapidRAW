@@ -28,6 +28,7 @@ export const ImmichInvokes = {
   GetImages: 'immich_get_images',
   Suggestions: 'immich_suggestions',
   ListPeople: 'immich_list_people',
+  Timeline: 'immich_timeline',
 } as const;
 
 export interface ImmichConfig {
@@ -49,6 +50,12 @@ export interface ImmichAlbum {
   startDate: string | null;
   endDate: string | null;
   shared: boolean;
+}
+
+export interface ImmichTimelineMonth {
+  /** First day of the month, `YYYY-MM-DD`. */
+  timeBucket: string;
+  count: number;
 }
 
 export interface ImmichPerson {
@@ -113,6 +120,16 @@ export const getImmichSuggestions = (kind: SuggestionKind, narrow: { country?: s
   });
 
 export const listImmichPeople = () => invoke<ImmichPerson[]>(ImmichInvokes.ListPeople);
+
+export const listImmichTimeline = () => invoke<ImmichTimelineMonth[]>(ImmichInvokes.Timeline);
+
+/** The filter for one month of the timeline. */
+export const monthFilter = (timeBucket: string): ImmichFilter => {
+  const [year, month] = timeBucket.split('-').map(Number);
+  const lastDay = new Date(year, month, 0).getDate();
+  const mm = String(month).padStart(2, '0');
+  return { takenFrom: `${year}-${mm}-01`, takenUntil: `${year}-${mm}-${String(lastDay).padStart(2, '0')}` };
+};
 
 /** Takes an id from the library: prefixed album id, pseudo album or filter. */
 export const getImmichAlbumImages = (albumId: string) =>
