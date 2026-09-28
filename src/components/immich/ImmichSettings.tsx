@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, PlugZap, Save, XCircle } from 'lucide-react';
+import { CheckCircle2, FileLock, Lock, PlugZap, Save, XCircle } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Switch from '../ui/Switch';
@@ -44,10 +44,15 @@ export default function ImmichSettings() {
   const refreshImmich = useImmichStore((state) => state.refresh);
   const [config, setConfig] = useState<ImmichConfig | null>(null);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  /** The key as last loaded or saved, to tell where it is stored. */
+  const [savedKey, setSavedKey] = useState('');
 
   useEffect(() => {
     getImmichConfig()
-      .then(setConfig)
+      .then((loaded) => {
+        setConfig(loaded);
+        setSavedKey(loaded.apiKey);
+      })
       .catch((err) => setStatus({ kind: 'error', message: String(err) }));
   }, []);
 
@@ -77,6 +82,9 @@ export default function ImmichSettings() {
         apiKey: config.apiKey.trim(),
         cacheDir: config.cacheDir?.trim() || null,
       });
+      const saved = await getImmichConfig();
+      setConfig(saved);
+      setSavedKey(saved.apiKey);
       await refreshImmich();
       setStatus({ kind: 'saved' });
     } catch (err) {
@@ -114,6 +122,12 @@ export default function ImmichSettings() {
               onChange={(e) => update({ apiKey: e.target.value })}
               bgClassName="bg-bg-primary"
             />
+            {savedKey && (
+              <Text variant={TextVariants.small} className="mt-2 flex items-center gap-1.5">
+                {config.keyInCredentialStore ? <Lock size={12} /> : <FileLock size={12} />}
+                {config.keyInCredentialStore ? t('immich.settings.keyInStore') : t('immich.settings.keyInFile')}
+              </Text>
+            )}
           </Field>
 
           <div className="flex flex-wrap items-center gap-3">
