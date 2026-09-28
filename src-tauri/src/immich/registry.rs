@@ -58,6 +58,10 @@ pub fn is_placeholder(path: &Path) -> bool {
     known && !path.exists()
 }
 
+pub fn remove(path: &Path) {
+    ENTRIES.write().unwrap().remove(path);
+}
+
 pub fn clear() {
     ENTRIES.write().unwrap().clear();
 }

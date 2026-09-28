@@ -3,7 +3,8 @@
 use futures::stream::{self, StreamExt};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
+use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
@@ -97,16 +98,8 @@ async fn find_raws(client: &ImmichClient, listed: &Asset) -> Vec<Asset> {
     let stem = source_stem(&listed.original_file_name);
     let wanted = stem.to_lowercase();
     // The search matches substrings, so filter for the exact stem.
-    let candidates = client
-        .search(json!({
-            "originalFileName": stem,
-            "type": "IMAGE",
-            "size": 200,
-        }))
+    let found: Vec<Asset> = same_stem(client, &stem)
         .await
-        .unwrap_or_default();
-
-    let found: Vec<Asset> = candidates
         .into_iter()
         .filter(|a| a.id != listed.id && is_raw(a) && file_stem(&a.original_file_name) == wanted)
         .collect();
@@ -128,25 +121,111 @@ fn choose<'a>(listed: &'a Asset, raw_candidates: &'a [Asset], cache_dir: &Path) 
         .unwrap_or(listed)
 }
 
-pub async fn album(
+/// Up to this many images, the RAW behind every JPEG is looked up. Beyond it
+/// only exports are, since a search per image would take minutes.
+const FULL_LOOKUP_LIMIT: usize = 2000;
+
+/// Which images to list. Maps onto Immich's metadata search; everything left
+/// empty is not filtered on.
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[serde(rename_all = "camelCase", default)]
+pub struct Filter {
+    pub album_id: Option<String>,
+    /// Only images that are in no album.
+    pub not_in_album: bool,
+    /// First and last day, as `YYYY-MM-DD`; both days are included.
+    pub taken_from: Option<String>,
+    pub taken_until: Option<String>,
+    pub country: Option<String>,
+    pub city: Option<String>,
+    pub make: Option<String>,
+    pub model: Option<String>,
+    pub person_ids: Vec<String>,
+    pub favorites_only: bool,
+}
+
+impl Filter {
+    fn to_query(&self) -> Value {
+        let mut query = json!({ "type": "IMAGE" });
+        let set = |query: &mut Value, key: &str, value: &Option<String>| {
+            if let Some(v) = value.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                query[key] = json!(v);
+            }
+        };
+        if let Some(album) = &self.album_id {
+            query["albumIds"] = json!([album]);
+        }
+        if self.not_in_album {
+            query["isNotInAlbum"] = json!(true);
+        }
+        if let Some(from) = day_start(self.taken_from.as_deref(), 0) {
+            query["takenAfter"] = json!(from);
+        }
+        if let Some(until) = day_start(self.taken_until.as_deref(), 1) {
+            query["takenBefore"] = json!(until);
+        }
+        set(&mut query, "country", &self.country);
+        set(&mut query, "city", &self.city);
+        set(&mut query, "make", &self.make);
+        set(&mut query, "model", &self.model);
+        if !self.person_ids.is_empty() {
+            query["personIds"] = json!(self.person_ids);
+        }
+        if self.favorites_only {
+            query["isFavorite"] = json!(true);
+        }
+        query
+    }
+}
+
+/// Midnight (UTC) of `day` plus `offset` days, as Immich expects it.
+fn day_start(day: Option<&str>, offset: i64) -> Option<String> {
+    let date = chrono::NaiveDate::parse_from_str(day?.trim(), "%Y-%m-%d").ok()?;
+    let date = date.checked_add_signed(chrono::Duration::days(offset))?;
+    Some(format!("{}T00:00:00.000Z", date.format("%Y-%m-%d")))
+}
+
+/// Assets named like `stem` or like an export of it (`stem_edited.jpg`).
+async fn same_stem(client: &ImmichClient, stem: &str) -> Vec<Asset> {
+    let wanted = stem.to_lowercase();
+    client
+        .search(json!({ "originalFileName": stem, "type": "IMAGE", "size": 200 }))
+        .await
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|a| source_stem(&a.original_file_name).to_lowercase() == wanted)
+        .collect()
+}
+
+pub async fn listing(
     client: &ImmichClient,
     config: &ImmichConfig,
-    album_id: &str,
+    filter: &Filter,
     cache_dir: &Path,
 ) -> Result<Vec<Resolved>, String> {
-    let assets: Vec<Asset> = client
-        .search(json!({ "albumIds": [album_id], "type": "IMAGE" }))
+    let mut assets: Vec<Asset> = client
+        .search(filter.to_query())
         .await?
         .into_iter()
         .filter(|a| a.kind == "IMAGE")
         .collect();
 
-    // Look up RAWs for everything that is not one already. An album that
-    // holds both the RAW and its export shows the RAW once.
+    if filter.not_in_album {
+        assets = without_developed_raws(client, assets).await;
+    }
+
+    // Look up RAWs for everything that is not one already. A listing that
+    // holds both the RAW and its export shows the RAW once. Everything else
+    // is shown and edited as it is.
+    let full_lookup = assets.len() <= FULL_LOOKUP_LIMIT;
     let raws: HashMap<String, Vec<Asset>> = if config.prefer_raw {
         // Owned items: a stream over borrowed assets cannot be proven `Send`
         // for every lifetime, which Tauri requires of async commands.
-        let lookups: Vec<Asset> = assets.iter().filter(|a| !is_raw(a)).cloned().collect();
+        let lookups: Vec<Asset> = assets
+            .iter()
+            .filter(|a| !is_raw(a) && (full_lookup || is_export(a)))
+            .cloned()
+            .collect();
         stream::iter(lookups)
             .map(|asset| async move {
                 let raws = find_raws(client, &asset).await;
@@ -175,11 +254,47 @@ pub async fn album(
             image: RemoteImage {
                 asset_id: source.id.clone(),
                 listed_asset_id: listed.id.clone(),
-                album_id: Some(album_id.to_string()),
+                album_id: filter.album_id.clone(),
             },
         });
     }
     Ok(resolved)
+}
+
+fn is_export(asset: &Asset) -> bool {
+    let stem = Path::new(&asset.original_file_name)
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    source_stem(&asset.original_file_name) != stem
+}
+
+/// A RAW is usually kept out of albums once its export is in one. Such a RAW
+/// is sorted, not forgotten, so it is left out of the images in no album.
+async fn without_developed_raws(client: &ImmichClient, assets: Vec<Asset>) -> Vec<Asset> {
+    let unassigned: HashSet<String> = assets.iter().map(|a| a.id.clone()).collect();
+    let raws: Vec<Asset> = assets.iter().filter(|a| is_raw(a)).cloned().collect();
+    let unassigned = &unassigned;
+    let developed: HashSet<String> = stream::iter(raws)
+        .map(|raw| async move {
+            let stem = Path::new(&raw.original_file_name)
+                .file_stem()
+                .map(|s| s.to_string_lossy().into_owned())
+                .unwrap_or_default();
+            let in_album = same_stem(client, &stem)
+                .await
+                .iter()
+                .any(|a| !is_raw(a) && !unassigned.contains(&a.id));
+            in_album.then_some(raw.id)
+        })
+        .buffer_unordered(LOOKUP_CONCURRENCY)
+        .filter_map(|id| async move { id })
+        .collect()
+        .await;
+    assets
+        .into_iter()
+        .filter(|a| !developed.contains(&a.id))
+        .collect()
 }
 
 #[cfg(test)]
@@ -195,6 +310,21 @@ mod tests {
             source_stem("holiday_edited_final.jpg"),
             "holiday_edited_final"
         );
+    }
+
+    #[test]
+    fn filter_days_are_inclusive() {
+        let filter = Filter {
+            taken_from: Some("2025-10-14".into()),
+            taken_until: Some("2025-10-28".into()),
+            country: Some("  ".into()),
+            ..Default::default()
+        };
+        let query = filter.to_query();
+        assert_eq!(query["takenAfter"], "2025-10-14T00:00:00.000Z");
+        assert_eq!(query["takenBefore"], "2025-10-29T00:00:00.000Z");
+        assert!(query.get("country").is_none());
+        assert!(query.get("albumIds").is_none());
     }
 
     #[test]

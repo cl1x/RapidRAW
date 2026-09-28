@@ -390,6 +390,11 @@ async fn upload_export(
     }
     for album in &albums {
         client.add_to_album(album, &[new_id.clone()]).await?;
+        if session.config.raw_leaves_album && entry.asset_id != new_id {
+            client
+                .remove_from_album(album, &[entry.asset_id.clone()])
+                .await?;
+        }
     }
 
     // Export on top, original underneath - the way Immich shows RAW+JPEG.
@@ -407,4 +412,177 @@ async fn upload_export(
         registry::set_listed_asset(source, &new_id);
     }
     Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Library actions on Immich images
+// ---------------------------------------------------------------------------
+
+/// Deleting an Immich image moves it to Immich's trash - the original together
+/// with the export shown in the album, since culling means the whole image -
+/// and drops it from the cache. Returns the other paths, which the caller
+/// deletes as usual. Virtual copies stay local: they are only a sidecar.
+pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<String>, String> {
+    let (remote, local): (Vec<_>, Vec<_>) = paths.into_iter().partition(|p| {
+        !p.contains("?vc=")
+            && registry::get(&crate::file_management::parse_virtual_path(p).0).is_some()
+    });
+    if remote.is_empty() {
+        return Ok(local);
+    }
+    let session = session(app_handle)?;
+
+    let mut ids = Vec::new();
+    let mut sources = Vec::new();
+    for path in &remote {
+        let (source, _) = crate::file_management::parse_virtual_path(path);
+        if let Some(entry) = registry::get(&source) {
+            for id in [entry.asset_id, entry.listed_asset_id] {
+                if !ids.contains(&id) {
+                    ids.push(id);
+                }
+            }
+            sources.push(source);
+        }
+    }
+    tauri::async_runtime::block_on(session.client.trash(&ids))?;
+
+    for source in sources {
+        registry::remove(&source);
+        // One folder per asset in the cache; never touch anything outside it.
+        if let Some(folder) = source.parent()
+            && folder.parent() == Some(session.cache_dir.as_path())
+        {
+            let _ = std::fs::remove_dir_all(folder);
+        }
+    }
+    let _ = app_handle.emit("immich-library-changed", json!({}));
+    Ok(local)
+}
+
+/// Images dropped onto an Immich album in the sidebar. Images from Immich are
+/// added to it; local files are uploaded first, with their edits, and move
+/// into the cache so there is no second, unconnected copy. `None` if
+/// `album_id` is not an Immich album.
+///
+/// Uploads can take a while, so this returns at once and reports through
+/// `immich-transfer` and `immich-library-changed` events.
+pub fn add_to_album(
+    app_handle: &AppHandle,
+    album_id: &str,
+    paths: &[String],
+) -> Option<Result<(), String>> {
+    let target = album_id.strip_prefix(ALBUM_PREFIX)?;
+    // Real albums have UUIDs; the pseudo albums ("unassigned") just upload.
+    let album = uuid::Uuid::parse_str(target)
+        .ok()
+        .map(|_| target.to_string());
+    let session = match session(app_handle) {
+        Ok(session) => session,
+        Err(e) => return Some(Err(e)),
+    };
+    let app_handle = app_handle.clone();
+    let paths = paths.to_vec();
+    tauri::async_runtime::spawn(async move {
+        let total = paths.len();
+        let mut ids = Vec::new();
+        let mut failed = Vec::new();
+        for (index, path) in paths.iter().enumerate() {
+            let _ = app_handle.emit(
+                "immich-transfer",
+                json!({ "state": "progress", "current": index, "total": total }),
+            );
+            match asset_for(&session, path, album.as_deref()).await {
+                Ok(id) => ids.push(id),
+                Err(e) => {
+                    log::error!("Could not add {path} to Immich: {e}");
+                    failed.push(e);
+                }
+            }
+        }
+        if let Some(album) = &album
+            && !ids.is_empty()
+            && let Err(e) = session.client.add_to_album(album, &ids).await
+        {
+            failed.push(e);
+        }
+        let _ = app_handle.emit(
+            "immich-transfer",
+            json!({
+                "state": "done",
+                "added": ids.len(),
+                "failed": failed.len(),
+                "error": failed.first(),
+            }),
+        );
+        let _ = app_handle.emit("immich-library-changed", json!({}));
+    });
+    Some(Ok(()))
+}
+
+/// Prefix of Immich album ids in the library, shared with the frontend.
+const ALBUM_PREFIX: &str = "immich:";
+
+/// The Immich asset for a dropped path, uploading it if it is a local file.
+async fn asset_for(session: &Session, path: &str, album: Option<&str>) -> Result<String, String> {
+    let (source, sidecar) = crate::file_management::parse_virtual_path(path);
+    if let Some(entry) = registry::get(&source) {
+        return Ok(entry.listed_asset_id);
+    }
+    if path.contains("?vc=") || !source.is_file() {
+        return Err(format!(
+            "{} is not a file that can be uploaded",
+            source.display()
+        ));
+    }
+
+    let modified = std::fs::metadata(&source)
+        .and_then(|m| m.modified())
+        .map(chrono::DateTime::<chrono::Utc>::from)
+        .unwrap_or_else(|_| chrono::Utc::now())
+        .to_rfc3339();
+    let id = session
+        .client
+        .upload(&source, &modified, &modified)
+        .await?
+        .id;
+
+    let file_name = source
+        .file_name()
+        .map(|n| n.to_owned())
+        .ok_or("Invalid file name")?;
+    let target = session.cache_dir.join(&id).join(&file_name);
+    std::fs::create_dir_all(target.parent().unwrap()).map_err(|e| e.to_string())?;
+    move_file(&source, &target)?;
+    if sidecar.exists() {
+        let _ = move_file(&sidecar, &sync::sidecar_of(&target));
+    }
+    let exif_cache = source.with_file_name(format!("{}.rrexif", file_name.to_string_lossy()));
+    if exif_cache.exists() {
+        let _ = move_file(
+            &exif_cache,
+            &target.with_file_name(format!("{}.rrexif", file_name.to_string_lossy())),
+        );
+    }
+
+    registry::insert(
+        target.clone(),
+        registry::RemoteImage {
+            asset_id: id.clone(),
+            listed_asset_id: id.clone(),
+            album_id: album.map(str::to_string),
+        },
+    );
+    // Edits made before the upload go along.
+    sync::push(&session.client, &id, &target).await?;
+    Ok(id)
+}
+
+/// Renames, or copies and deletes when the cache is on another drive.
+fn move_file(from: &Path, to: &Path) -> Result<(), String> {
+    if std::fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    std::fs::copy(from, to).map_err(|e| format!("Cannot copy {}: {e}", from.display()))?;
+    std::fs::remove_file(from).map_err(|e| format!("Cannot remove {}: {e}", from.display()))
 }
