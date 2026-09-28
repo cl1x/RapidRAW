@@ -946,6 +946,46 @@
       "watermarkImage": "Wasserzeichen-Bild"
     }
   },
+  "immich": {
+    "section": {
+      "title": "Immich",
+      "refresh": "Alben aktualisieren",
+      "loading": "Alben werden geladen…",
+      "empty": "Keine Alben auf dem Server.",
+      "error": "Immich ist nicht erreichbar."
+    },
+    "settings": {
+      "category": "Immich",
+      "title": "Immich",
+      "description": "Zeigt die Alben deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen und Bearbeitungen in Immich gespeichert – auf jedem Rechner derselbe Stand.",
+      "serverUrl": "Serveradresse",
+      "serverUrlDesc": "Die Adresse, unter der du Immich im Browser öffnest.",
+      "apiKey": "API-Schlüssel",
+      "apiKeyDesc": "In Immich unter Kontoeinstellungen → API-Schlüssel anlegen. Er braucht Zugriff auf Alben und Assets sowie das Recht zum Hochladen.",
+      "test": "Verbindung testen",
+      "save": "Speichern",
+      "working": "Einen Moment…",
+      "saved": "Gespeichert.",
+      "connected": "Verbunden als {{user}} (Immich {{version}})",
+      "behaviourTitle": "Bearbeiten",
+      "preferRaw": "Bei Exporten das RAW öffnen",
+      "preferRawDesc": "Liegt in einem Album ein Export wie IMG_0042_edited.jpg, wird stattdessen das zugehörige RAW geöffnet.",
+      "uploadExports": "Exporte zu Immich hochladen",
+      "uploadExportsDesc": "Exporte von Immich-Bildern landen im Album, aus dem sie geöffnet wurden, gestapelt über ihrem RAW.",
+      "replacePrevious": "Vorherigen Export ersetzen",
+      "replacePreviousDesc": "Der bisherige Export wandert in den Papierkorb von Immich, der neue übernimmt seine Alben.",
+      "cacheLimit": "Cache-Größe (GB)",
+      "cacheLimitDesc": "Heruntergeladene Originale über dieser Größe werden entfernt, älteste zuerst. Bearbeitungen bleiben erhalten.",
+      "cacheDir": "Cache-Ordner",
+      "cacheDirDesc": "Wo heruntergeladene Originale liegen.",
+      "cacheDirDefault": "Standard"
+    },
+    "toasts": {
+      "uploaded": "{{fileName}} zu Immich hochgeladen",
+      "uploadFailed": "Hochladen von {{fileName}} zu Immich fehlgeschlagen: {{error}}",
+      "downloadFailed": "Download aus Immich fehlgeschlagen: {{error}}"
+    }
+  },
   "library": {
     "community": {
       "actionSave": "Speichern",
@@ -1115,7 +1155,7 @@
       "progress": "Wird importiert... ({{current}}/{{total}})"
     },
     "items": {
-      "cloudPlaceholder": "In iCloud gespeichert — nicht heruntergeladen",
+      "cloudPlaceholder": "In der Cloud gespeichert — noch nicht heruntergeladen",
       "collapseFolder": "Ordner zuklappen",
       "currentFolder": "Aktueller Ordner",
       "expandFolder": "Ordner aufklappen",
