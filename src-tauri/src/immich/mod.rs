@@ -1,23 +1,6 @@
-//! Immich integration: browse the albums of an Immich server in the library
-//! and edit their originals.
-//!
-//! Everything goes through the Immich API; the server is the only place the
-//! photos and their edits live. Locally there is just a cache, so the editor,
-//! sidecars, presets and export keep working on files as everywhere else:
-//!
-//! * An album's images are shown with Immich's previews right away. The
-//!   original is downloaded when an image is opened, into a cache folder that
-//!   is trimmed to a size limit. Until then it counts as a cloud placeholder,
-//!   the same way files still in iCloud are handled.
-//! * Edits are stored in Immich as asset metadata (see `sync`), so they are
-//!   the same on every machine.
-//! * For an image stacked with a RAW - an export on top of its original - the
-//!   RAW is opened instead.
-//! * Exports of Immich images can be uploaded back into the album they were
-//!   opened from and stacked on top of their RAW.
-//!
-//! The rest of the app talks to this module only through the few functions
-//! below; see their call sites for the hooks.
+//! Immich integration. Immich assets are mapped onto paths in a local cache, so
+//! the rest of the app keeps working on files; the functions below are called
+//! from the few places where that is not enough.
 
 mod client;
 pub mod commands;
@@ -41,7 +24,6 @@ use config::ImmichConfig;
 
 const THUMBNAIL_SMALL: u32 = 480;
 const THUMBNAIL_MEDIUM: u32 = 1280;
-/// How often local edits are checked and sent to the server.
 const SYNC_INTERVAL: Duration = Duration::from_secs(5);
 
 struct Session {
@@ -52,8 +34,6 @@ struct Session {
 
 static SESSION: Lazy<RwLock<Option<Arc<Session>>>> = Lazy::new(|| RwLock::new(None));
 
-/// Client and settings, created on first use and dropped when the settings
-/// change.
 fn session(app_handle: &AppHandle) -> Result<Arc<Session>, String> {
     if let Some(session) = SESSION.read().unwrap().as_ref() {
         return Ok(session.clone());
@@ -87,19 +67,10 @@ fn cache_dir(app_handle: &AppHandle, config: &ImmichConfig) -> Result<PathBuf, S
     }
 }
 
-// ---------------------------------------------------------------------------
-// Hooks called from the rest of the app
-// ---------------------------------------------------------------------------
-
-/// True for an Immich asset that has not been downloaded yet. Folded into
-/// `file_management::is_cloud_placeholder`, so the library marks it the same
-/// way as a file that is still in iCloud.
 pub fn is_placeholder(path: &Path) -> bool {
     registry::is_placeholder(path)
 }
 
-/// Makes sure the original behind `path` is on disk and its edits are the
-/// latest from the server. Does nothing for paths that are not from Immich.
 pub async fn ensure_local(app_handle: &AppHandle, path: &Path) -> Result<(), String> {
     let Some(entry) = registry::get(path) else {
         return Ok(());
@@ -110,8 +81,7 @@ pub async fn ensure_local(app_handle: &AppHandle, path: &Path) -> Result<(), Str
         download(app_handle, &session, &entry.asset_id, path).await?;
         prune_cache_later(&session);
     }
-    // Edits may have been made on another machine. Not being able to fetch
-    // them must not keep an image from opening, though.
+    // Failing to fetch newer edits must not keep the image from opening.
     if let Err(e) = sync::pull(&session.client, &entry.asset_id, path).await {
         log::warn!(
             "Could not fetch edits of {} from Immich: {e}",
@@ -127,7 +97,6 @@ async fn download(
     asset_id: &str,
     path: &Path,
 ) -> Result<(), String> {
-    // One download per file, even if the editor and an export ask at once.
     let lock = {
         static LOCKS: Lazy<Mutex<HashMap<PathBuf, Arc<tokio::sync::Mutex<()>>>>> =
             Lazy::new(|| Mutex::new(HashMap::new()));
@@ -152,8 +121,7 @@ async fn download(
         "immich-download",
         json!({ "path": path, "state": "started" }),
     );
-    // Download next to the target and rename, so an interrupted download
-    // never leaves a half file that looks complete.
+    // Renamed when complete, so an interrupted download never looks finished.
     let partial = parent.join(format!(".{asset_id}.part"));
     let result = session
         .client
@@ -174,9 +142,6 @@ async fn download(
     result
 }
 
-/// Sends changed sidecars of Immich images to the server every few seconds.
-/// Only looks at images listed this session; their sync state on disk makes
-/// sure edits from an earlier session are sent once the album is opened again.
 fn start_sync_loop(app_handle: &AppHandle) {
     static STARTED: AtomicBool = AtomicBool::new(false);
     if STARTED.swap(true, Ordering::SeqCst) {
@@ -199,7 +164,6 @@ fn start_sync_loop(app_handle: &AppHandle) {
                     }
                     Ok(false) => {}
                     Err(e) => {
-                        // Most likely offline; try again next round.
                         log::debug!("Could not send edits of {}: {e}", path.display());
                         break;
                     }
@@ -223,13 +187,8 @@ pub async fn ensure_local_all(app_handle: &AppHandle, paths: &[String]) -> Resul
     Ok(())
 }
 
-/// Thumbnails for placeholders come from Immich, since there is no local
-/// file to render yet.
-///
-/// Returns `None` if `path` is not an Immich placeholder, so the caller
-/// carries on as usual. Otherwise returns the cached thumbnail files, or
-/// `Some(None)` while they are still being fetched; a `thumbnail-generated`
-/// event follows once they are there.
+/// `None` if `path` is not an Immich placeholder. `Some(None)` while the
+/// thumbnail is being fetched; a `thumbnail-generated` event follows.
 pub fn placeholder_thumbnail(
     app_handle: &AppHandle,
     path_str: &str,
@@ -239,8 +198,7 @@ pub fn placeholder_thumbnail(
     if !is_placeholder(&source) {
         return None;
     }
-    // The listed asset is usually the developed export, so the library shows
-    // the edited look rather than the flat RAW.
+    // The listed asset is usually the export, which shows the edited look.
     let asset_id = registry::get(&source)?.listed_asset_id;
     let small = thumb_cache_dir.join(format!("immich_{asset_id}_small.jpg"));
     let medium = thumb_cache_dir.join(format!("immich_{asset_id}_medium.jpg"));
@@ -314,9 +272,6 @@ async fn fetch_thumbnail(
     .map_err(|e| e.to_string())?
 }
 
-/// Called for every successfully exported image. Uploads the export if its
-/// source came from Immich and uploading is switched on; runs in the
-/// background and reports through `immich-upload` events.
 pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path) {
     let (source, _) = crate::file_management::parse_virtual_path(source_path);
     let Some(entry) = registry::get(&source) else {
@@ -340,7 +295,6 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
             "immich-upload",
             json!({ "state": "started", "fileName": file_name }),
         );
-        // Edits first, so the server never has an export without them.
         if let Err(e) = sync::push(&session.client, &entry.asset_id, &source).await {
             log::warn!("Could not send edits of {}: {e}", source.display());
         }
@@ -365,7 +319,6 @@ async fn upload_export(
     output: &Path,
 ) -> Result<(), String> {
     let client = &session.client;
-    // Export already set the file time to the capture time, if it could.
     let modified = std::fs::metadata(output)
         .and_then(|m| m.modified())
         .map(chrono::DateTime::<chrono::Utc>::from)
@@ -374,8 +327,7 @@ async fn upload_export(
     let uploaded = client.upload(output, &modified, &modified).await?;
     let new_id = uploaded.id;
 
-    // The previous export is the asset that was listed in the album, as long
-    // as it is not the original itself.
+    // The listed asset is the previous export unless it is the original itself.
     let previous = (entry.listed_asset_id != entry.asset_id && entry.listed_asset_id != new_id)
         .then(|| entry.listed_asset_id.clone());
     let replace = session.config.replace_previous_export && previous.is_some();
@@ -397,7 +349,6 @@ async fn upload_export(
         }
     }
 
-    // Export on top, original underneath - the way Immich shows RAW+JPEG.
     if entry.asset_id != new_id {
         client
             .create_stack(&[new_id.clone(), entry.asset_id.clone()])
@@ -407,25 +358,15 @@ async fn upload_export(
     if let (true, Some(previous)) = (replace, previous) {
         client.trash(&[previous]).await?;
     }
-    // The next export of this image replaces this one.
     if new_id != entry.asset_id {
         registry::set_listed_asset(source, &new_id);
     }
     Ok(())
 }
 
-// ---------------------------------------------------------------------------
-// Library actions on Immich images
-// ---------------------------------------------------------------------------
-
-/// Deleting an Immich image moves it to Immich's trash - the original together
-/// with the export shown in the album, since culling means the whole image -
-/// and drops it from the cache. Returns the other paths, which the caller
-/// deletes as usual. Virtual copies stay local: they are only a sidecar.
-///
-/// The request runs in the background so the interface does not wait for the
-/// server. Until it is done the images are left out of every listing; if it
-/// fails, they reappear and an `immich-trash` event reports the error.
+/// Moves Immich images to Immich's trash, together with their export, and
+/// returns the remaining paths for the caller to delete. The request runs in
+/// the background; meanwhile the images are left out of listings.
 pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<String>, String> {
     let (remote, local): (Vec<_>, Vec<_>) = paths.into_iter().partition(|p| {
         !p.contains("?vc=")
@@ -459,8 +400,7 @@ pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<St
         match &result {
             Ok(()) => {
                 for source in &sources {
-                    // One folder per asset in the cache; never touch anything
-                    // outside it.
+                    // Only ever remove an asset folder inside the cache.
                     if let Some(folder) = source.parent()
                         && folder.parent() == Some(session.cache_dir.as_path())
                     {
@@ -478,20 +418,15 @@ pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<St
     Ok(local)
 }
 
-/// Images dropped onto an Immich album in the sidebar. Images from Immich are
-/// added to it; local files are uploaded first, with their edits, and move
-/// into the cache so there is no second, unconnected copy. `None` if
-/// `album_id` is not an Immich album.
-///
-/// Uploads can take a while, so this returns at once and reports through
-/// `immich-transfer` and `immich-library-changed` events.
+/// `None` if `album_id` is not an Immich album. Local files are uploaded and
+/// moved into the cache; progress is reported through `immich-transfer`.
 pub fn add_to_album(
     app_handle: &AppHandle,
     album_id: &str,
     paths: &[String],
 ) -> Option<Result<(), String>> {
     let target = album_id.strip_prefix(ALBUM_PREFIX)?;
-    // Real albums have UUIDs; the pseudo albums ("unassigned") just upload.
+    // Pseudo albums such as "unassigned" have no UUID and only upload.
     let album = uuid::Uuid::parse_str(target)
         .ok()
         .map(|_| target.to_string());
@@ -538,10 +473,9 @@ pub fn add_to_album(
     Some(Ok(()))
 }
 
-/// Prefix of Immich album ids in the library, shared with the frontend.
+/// Must match `IMMICH_ALBUM_PREFIX` in the frontend.
 const ALBUM_PREFIX: &str = "immich:";
 
-/// The Immich asset for a dropped path, uploading it if it is a local file.
 async fn asset_for(session: &Session, path: &str, album: Option<&str>) -> Result<String, String> {
     let (source, sidecar) = crate::file_management::parse_virtual_path(path);
     if let Some(entry) = registry::get(&source) {
@@ -591,12 +525,10 @@ async fn asset_for(session: &Session, path: &str, album: Option<&str>) -> Result
             album_id: album.map(str::to_string),
         },
     );
-    // Edits made before the upload go along.
     sync::push(&session.client, &id, &target).await?;
     Ok(id)
 }
 
-/// Renames, or copies and deletes when the cache is on another drive.
 fn move_file(from: &Path, to: &Path) -> Result<(), String> {
     if std::fs::rename(from, to).is_ok() {
         return Ok(());

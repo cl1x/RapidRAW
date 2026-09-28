@@ -53,7 +53,6 @@ function Choice({
 
 const asOptions = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
-/** Fetches filter choices from Immich; failures just leave the list empty. */
 function useSuggestions(kind: SuggestionKind, narrow: { country?: string; make?: string } = {}) {
   const [values, setValues] = useState<string[]>([]);
   const { country, make } = narrow;
@@ -65,7 +64,6 @@ function useSuggestions(kind: SuggestionKind, narrow: { country?: string; make?:
   return values;
 }
 
-/** A compact search form for the Immich section of the sidebar. */
 export default function ImmichFilterForm({
   albums,
   initial,
@@ -217,7 +215,6 @@ export default function ImmichFilterForm({
   );
 }
 
-/** A short title for a filtered listing, e.g. "Irland · 14.10.–28.10.2025". */
 export function describeFilter(filter: ImmichFilter, albums: ImmichAlbum[], fallback: string, unassigned: string) {
   const parts: string[] = [];
   if (filter.albumId) parts.push(albums.find((a) => a.id === filter.albumId)?.albumName ?? fallback);

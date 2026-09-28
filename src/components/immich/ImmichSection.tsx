@@ -32,7 +32,6 @@ import ImmichFilterForm, { describeFilter } from './ImmichFilterForm';
 import { useImmichStore } from './useImmichStore';
 
 interface ImmichSectionProps {
-  /** The section header, so it looks like the other sections of the tree. */
   header: ReactNode;
   isOpen: boolean;
   onSelectAlbum(albumId: string, albumName: string, images: string[]): void;
@@ -41,12 +40,6 @@ interface ImmichSectionProps {
   showImageCounts: boolean;
 }
 
-/**
- * The connected Immich server as a section of the folder tree: all photos,
- * photos in no album, a filter, and the albums. Images can be dropped on an
- * album to add them, or on "in no album" to upload them. Renders nothing until
- * Immich is set up in the settings.
- */
 export default function ImmichSection({
   header,
   isOpen,
@@ -186,10 +179,6 @@ export default function ImmichSection({
   );
 }
 
-/**
- * Years and months with photos, like Immich's timeline. A month is a listing
- * of manageable size, where "all photos" at once would be tens of thousands.
- */
 function ImmichTimeline({
   selectedAlbumId,
   onSelectAlbum,
@@ -263,11 +252,8 @@ function ImmichTimeline({
   );
 }
 
-/**
- * One entry of the section. With a `dropId`, library images can be dropped on
- * it; the library's drop handler passes them to `add_to_album` like for local
- * albums, and the backend takes it from there.
- */
+// Drops are handled by the library's drop handler, which passes them to
+// `add_to_album` as for local albums.
 function ImmichRow({
   icon,
   label,

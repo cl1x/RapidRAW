@@ -13,13 +13,10 @@ interface ImmichState {
   albums: ImmichAlbum[];
   isLoading: boolean;
   error: string | null;
-  /** Months with photos, newest first; loaded when the timeline is opened. */
   timeline: ImmichTimelineMonth[];
   loadTimeline(): Promise<void>;
-  /** The filter last used in the sidebar, kept while the app runs. */
   filter: ImmichFilter;
   setFilter(filter: ImmichFilter): void;
-  /** Re-reads the settings, and the albums if Immich is set up. */
   refresh(): Promise<void>;
   loadAlbums(): Promise<void>;
 }
