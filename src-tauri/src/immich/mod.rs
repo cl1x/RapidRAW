@@ -11,8 +11,8 @@
 //!   the same way files still in iCloud are handled.
 //! * Edits are stored in Immich as asset metadata (see `sync`), so they are
 //!   the same on every machine.
-//! * For exported JPEGs (`name_edited.jpg`), the RAW they came from is opened
-//!   instead, if Immich has it.
+//! * For an image stacked with a RAW - an export on top of its original - the
+//!   RAW is opened instead.
 //! * Exports of Immich images can be uploaded back into the album they were
 //!   opened from and stacked on top of their RAW.
 //!
@@ -77,7 +77,6 @@ fn session(app_handle: &AppHandle) -> Result<Arc<Session>, String> {
 fn reset_session() {
     *SESSION.write().unwrap() = None;
     registry::clear();
-    resolve::forget_raw_matches();
 }
 
 fn cache_dir(app_handle: &AppHandle, config: &ImmichConfig) -> Result<PathBuf, String> {
