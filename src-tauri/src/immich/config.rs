@@ -12,6 +12,9 @@ pub struct ImmichConfig {
     pub api_key: String,
     #[serde(alias = "preferRaw")]
     pub open_stacked_raw: bool,
+    /// The library reads the EXIF data of every listed image, which gets slow
+    /// for large listings.
+    pub listing_limit: u32,
     pub sync_edits: bool,
     pub upload_exports: bool,
     pub cache_dir: Option<String>,
@@ -26,6 +29,7 @@ impl Default for ImmichConfig {
             server_url: String::new(),
             api_key: String::new(),
             open_stacked_raw: true,
+            listing_limit: 2000,
             sync_edits: true,
             upload_exports: true,
             cache_dir: None,

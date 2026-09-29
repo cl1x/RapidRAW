@@ -31,6 +31,7 @@ export interface ImmichConfig {
   serverUrl: string;
   apiKey: string;
   openStackedRaw: boolean;
+  listingLimit: number;
   syncEdits: boolean;
   uploadExports: boolean;
   cacheDir: string | null;
