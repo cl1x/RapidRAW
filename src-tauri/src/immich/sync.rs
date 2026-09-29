@@ -7,7 +7,13 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
+use serde_json::json;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use tauri::{AppHandle, Emitter};
+
 use super::client::ImmichClient;
+use super::{registry, session};
 
 pub const EDITS_KEY: &str = "rapidraw";
 
@@ -152,4 +158,39 @@ pub fn prune_cache(cache_dir: &Path, limit_bytes: u64) {
             total = total.saturating_sub(size);
         }
     }
+}
+
+/// Sends changed sidecars of listed images to the server every few seconds.
+pub fn start_loop(app_handle: &AppHandle) {
+    static STARTED: AtomicBool = AtomicBool::new(false);
+    if STARTED.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app_handle = app_handle.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            let Ok(session) = session(&app_handle) else {
+                continue;
+            };
+            if !session.config.sync_edits {
+                continue;
+            }
+            for (path, entry) in registry::all() {
+                if !has_local_changes(&path) {
+                    continue;
+                }
+                match push(&session.client, &entry.asset_id, &path).await {
+                    Ok(true) => {
+                        let _ = app_handle.emit("immich-edits-saved", json!({ "path": path }));
+                    }
+                    Ok(false) => {}
+                    Err(e) => {
+                        log::debug!("Could not send edits of {}: {e}", path.display());
+                        break;
+                    }
+                }
+            }
+        }
+    });
 }

@@ -120,6 +120,12 @@ impl StackIndex {
         Self { stacks, by_asset }
     }
 
+    /// Another image of the same stack that is on top of `asset`, if any.
+    fn primary_of(&self, asset: &Asset) -> Option<&str> {
+        let stack = &self.stacks[*self.by_asset.get(&asset.id)?];
+        (stack.primary_asset_id != asset.id).then_some(stack.primary_asset_id.as_str())
+    }
+
     fn companions<'a>(&'a self, asset: &'a Asset) -> impl Iterator<Item = &'a Asset> {
         self.by_asset
             .get(&asset.id)
@@ -155,7 +161,7 @@ pub async fn listing(
         .collect();
 
     // One request for all stacks is far cheaper than one per image.
-    let stacks = if config.prefer_raw || filter.not_in_album {
+    let stacks = if config.open_stacked_raw || filter.not_in_album {
         StackIndex::new(client.stacks().await?)
     } else {
         StackIndex::new(Vec::new())
@@ -168,7 +174,7 @@ pub async fn listing(
     let resolved = resolve(
         &assets,
         &stacks,
-        config.prefer_raw,
+        config.open_stacked_raw,
         filter.album_id.as_deref(),
         cache_dir,
     );
@@ -178,14 +184,22 @@ pub async fn listing(
 fn resolve(
     assets: &[Asset],
     stacks: &StackIndex,
-    prefer_raw: bool,
+    open_stacked_raw: bool,
     album_id: Option<&str>,
     cache_dir: &Path,
 ) -> Vec<Resolved> {
+    let listed_ids: HashSet<&str> = assets.iter().map(|a| a.id.as_str()).collect();
     let mut seen = HashSet::new();
     let mut resolved = Vec::with_capacity(assets.len());
     for listed in assets {
-        let source = if prefer_raw {
+        // One entry per stack: its top image stands for it.
+        if stacks
+            .primary_of(listed)
+            .is_some_and(|primary| listed_ids.contains(primary))
+        {
+            continue;
+        }
+        let source = if open_stacked_raw {
             stacks.source(listed, cache_dir)
         } else {
             listed
@@ -194,7 +208,6 @@ fn resolve(
             continue;
         }
         let path = cache_path(source, cache_dir);
-        // A listing holding both the RAW and its export shows the RAW once.
         if !crate::formats::is_supported_image_file(&path) || !seen.insert(path.clone()) {
             continue;
         }
@@ -245,7 +258,10 @@ mod tests {
     }
 
     fn stack(assets: Vec<Asset>) -> Stack {
-        Stack { assets }
+        Stack {
+            primary_asset_id: assets[0].id.clone(),
+            assets,
+        }
     }
 
     #[test]
@@ -272,12 +288,17 @@ mod tests {
     }
 
     #[test]
-    fn shows_raw_and_export_in_one_listing_once() {
+    fn shows_a_stack_once_as_raw_or_as_its_top_image() {
         let jpeg = asset("j", "DSC1_edited.jpg");
         let raw = asset("r", "DSC1.ARW");
         let stacks = StackIndex::new(vec![stack(vec![jpeg.clone(), raw.clone()])]);
-        let resolved = resolve(&[jpeg, raw], &stacks, true, None, Path::new("/c"));
-        assert_eq!(resolved.len(), 1);
+        let listing = [raw, jpeg];
+        let as_raw = resolve(&listing, &stacks, true, None, Path::new("/c"));
+        let as_top = resolve(&listing, &stacks, false, None, Path::new("/c"));
+        assert_eq!(as_raw.len(), 1);
+        assert_eq!(as_raw[0].image.asset_id, "r");
+        assert_eq!(as_top.len(), 1);
+        assert_eq!(as_top[0].image.asset_id, "j");
     }
 
     #[test]

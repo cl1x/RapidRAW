@@ -22,8 +22,9 @@ pub fn immich_get_config(app_handle: AppHandle) -> ImmichConfig {
 
 #[tauri::command]
 pub fn immich_save_config(config: ImmichConfig, app_handle: AppHandle) -> Result<(), String> {
+    let previous = config::load(&app_handle);
     config::save(&app_handle, &config)?;
-    reset_session();
+    reset_session(!previous.same_library(&config));
     Ok(())
 }
 

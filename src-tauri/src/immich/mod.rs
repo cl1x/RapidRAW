@@ -1,30 +1,31 @@
 //! Immich integration. Immich assets are mapped onto paths in a local cache, so
-//! the rest of the app keeps working on files; the functions below are called
-//! from the few places where that is not enough.
+//! the rest of the app keeps working on files; the functions exported here are
+//! called from the few places where that is not enough.
 
 mod client;
 pub mod commands;
 mod config;
+mod files;
 mod registry;
 mod resolve;
 mod secrets;
 mod sync;
+mod thumbnails;
+mod trash;
+mod uploads;
 
 use once_cell::sync::Lazy;
-use serde_json::json;
-use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use std::sync::{Arc, RwLock};
+use tauri::AppHandle;
 
 use client::ImmichClient;
 use config::ImmichConfig;
 
-const THUMBNAIL_SMALL: u32 = 480;
-const THUMBNAIL_MEDIUM: u32 = 1280;
-const SYNC_INTERVAL: Duration = Duration::from_secs(5);
+pub use files::{ensure_local, ensure_local_all};
+pub use thumbnails::placeholder_thumbnail;
+pub use trash::trash_remote;
+pub use uploads::{add_to_album, on_exported};
 
 struct Session {
     config: ImmichConfig,
@@ -50,14 +51,19 @@ fn session(app_handle: &AppHandle) -> Result<Arc<Session>, String> {
         cache_dir,
     });
     *SESSION.write().unwrap() = Some(session.clone());
-    start_sync_loop(app_handle);
-    prune_cache_later(&session);
+    sync::start_loop(app_handle);
+    files::prune_cache_later(&session);
     Ok(session)
 }
 
-fn reset_session() {
+/// Rebuilds the session with the saved settings on next use. The images known
+/// so far stay known unless they may now live on another server or in another
+/// cache folder.
+fn reset_session(forget_images: bool) {
     *SESSION.write().unwrap() = None;
-    registry::clear();
+    if forget_images {
+        registry::clear();
+    }
 }
 
 fn cache_dir(app_handle: &AppHandle, config: &ImmichConfig) -> Result<PathBuf, String> {
@@ -69,470 +75,4 @@ fn cache_dir(app_handle: &AppHandle, config: &ImmichConfig) -> Result<PathBuf, S
 
 pub fn is_placeholder(path: &Path) -> bool {
     registry::is_placeholder(path)
-}
-
-pub async fn ensure_local(app_handle: &AppHandle, path: &Path) -> Result<(), String> {
-    let Some(entry) = registry::get(path) else {
-        return Ok(());
-    };
-    let session = session(app_handle)?;
-
-    if !path.exists() {
-        download(app_handle, &session, &entry.asset_id, path).await?;
-        prune_cache_later(&session);
-    }
-    // Failing to fetch newer edits must not keep the image from opening.
-    if let Err(e) = sync::pull(&session.client, &entry.asset_id, path).await {
-        log::warn!(
-            "Could not fetch edits of {} from Immich: {e}",
-            path.display()
-        );
-    }
-    Ok(())
-}
-
-async fn download(
-    app_handle: &AppHandle,
-    session: &Session,
-    asset_id: &str,
-    path: &Path,
-) -> Result<(), String> {
-    let lock = {
-        static LOCKS: Lazy<Mutex<HashMap<PathBuf, Arc<tokio::sync::Mutex<()>>>>> =
-            Lazy::new(|| Mutex::new(HashMap::new()));
-        LOCKS
-            .lock()
-            .unwrap()
-            .entry(path.to_path_buf())
-            .or_default()
-            .clone()
-    };
-    let _guard = lock.lock().await;
-    if path.exists() {
-        return Ok(());
-    }
-
-    let parent = path.parent().ok_or("Invalid cache path")?;
-    tokio::fs::create_dir_all(parent)
-        .await
-        .map_err(|e| format!("Cannot create '{}': {e}", parent.display()))?;
-
-    let _ = app_handle.emit(
-        "immich-download",
-        json!({ "path": path, "state": "started" }),
-    );
-    // Renamed when complete, so an interrupted download never looks finished.
-    let partial = parent.join(format!(".{asset_id}.part"));
-    let result = session
-        .client
-        .download_original(asset_id, &partial)
-        .await
-        .and_then(|_| std::fs::rename(&partial, path).map_err(|e| e.to_string()));
-    if result.is_err() {
-        let _ = std::fs::remove_file(&partial);
-    }
-    let _ = app_handle.emit(
-        "immich-download",
-        json!({
-            "path": path,
-            "state": if result.is_ok() { "done" } else { "error" },
-            "error": result.as_ref().err(),
-        }),
-    );
-    result
-}
-
-fn start_sync_loop(app_handle: &AppHandle) {
-    static STARTED: AtomicBool = AtomicBool::new(false);
-    if STARTED.swap(true, Ordering::SeqCst) {
-        return;
-    }
-    let app_handle = app_handle.clone();
-    tauri::async_runtime::spawn(async move {
-        loop {
-            tokio::time::sleep(SYNC_INTERVAL).await;
-            let Ok(session) = session(&app_handle) else {
-                continue;
-            };
-            for (path, entry) in registry::all() {
-                if !sync::has_local_changes(&path) {
-                    continue;
-                }
-                match sync::push(&session.client, &entry.asset_id, &path).await {
-                    Ok(true) => {
-                        let _ = app_handle.emit("immich-edits-saved", json!({ "path": path }));
-                    }
-                    Ok(false) => {}
-                    Err(e) => {
-                        log::debug!("Could not send edits of {}: {e}", path.display());
-                        break;
-                    }
-                }
-            }
-        }
-    });
-}
-
-fn prune_cache_later(session: &Arc<Session>) {
-    let dir = session.cache_dir.clone();
-    let limit = u64::from(session.config.cache_limit_gb) * 1024 * 1024 * 1024;
-    tauri::async_runtime::spawn_blocking(move || sync::prune_cache(&dir, limit));
-}
-
-pub async fn ensure_local_all(app_handle: &AppHandle, paths: &[String]) -> Result<(), String> {
-    for path in paths {
-        let (source, _) = crate::file_management::parse_virtual_path(path);
-        ensure_local(app_handle, &source).await?;
-    }
-    Ok(())
-}
-
-/// `None` if `path` is not an Immich placeholder. `Some(None)` while the
-/// thumbnail is being fetched; a `thumbnail-generated` event follows.
-pub fn placeholder_thumbnail(
-    app_handle: &AppHandle,
-    path_str: &str,
-    thumb_cache_dir: &Path,
-) -> Option<Option<(String, String)>> {
-    let (source, _) = crate::file_management::parse_virtual_path(path_str);
-    if !is_placeholder(&source) {
-        return None;
-    }
-    // The listed asset is usually the export, which shows the edited look.
-    let asset_id = registry::get(&source)?.listed_asset_id;
-    let small = thumb_cache_dir.join(format!("immich_{asset_id}_small.jpg"));
-    let medium = thumb_cache_dir.join(format!("immich_{asset_id}_medium.jpg"));
-    let as_strings = |small: &Path, medium: &Path| {
-        (
-            small.to_string_lossy().into_owned(),
-            medium.to_string_lossy().into_owned(),
-        )
-    };
-    if small.exists() && medium.exists() {
-        return Some(Some(as_strings(&small, &medium)));
-    }
-
-    static IN_FLIGHT: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
-    if !IN_FLIGHT.lock().unwrap().insert(asset_id.clone()) {
-        return Some(None);
-    }
-
-    let app_handle = app_handle.clone();
-    let path_str = path_str.to_string();
-    tauri::async_runtime::spawn(async move {
-        let result = fetch_thumbnail(&app_handle, &asset_id, &small, &medium).await;
-        IN_FLIGHT.lock().unwrap().remove(&asset_id);
-        match result {
-            Ok(()) => {
-                let (small, medium) = as_strings(&small, &medium);
-                let _ = app_handle.emit(
-                    "thumbnail-generated",
-                    json!({
-                        "path": path_str,
-                        "thumbnailPath": small,
-                        "previewPath": medium,
-                        "rating": 0,
-                        "is_edited": false,
-                    }),
-                );
-            }
-            Err(e) => log::warn!("Immich thumbnail for {asset_id} failed: {e}"),
-        }
-    });
-    Some(None)
-}
-
-async fn fetch_thumbnail(
-    app_handle: &AppHandle,
-    asset_id: &str,
-    small: &Path,
-    medium: &Path,
-) -> Result<(), String> {
-    let session = session(app_handle)?;
-    let bytes = session.client.thumbnail(asset_id, "preview").await?;
-    let small = small.to_path_buf();
-    let medium = medium.to_path_buf();
-    tokio::task::spawn_blocking(move || {
-        let image = image::load_from_memory(&bytes).map_err(|e| e.to_string())?;
-        for (target, size) in [(&small, THUMBNAIL_SMALL), (&medium, THUMBNAIL_MEDIUM)] {
-            let resized = if image.width().max(image.height()) > size {
-                image.thumbnail(size, size)
-            } else {
-                image.clone()
-            };
-            let mut encoded = Vec::new();
-            image::codecs::jpeg::JpegEncoder::new_with_quality(&mut encoded, 85)
-                .encode_image(&resized.to_rgb8())
-                .map_err(|e| e.to_string())?;
-            std::fs::write(target, encoded).map_err(|e| e.to_string())?;
-        }
-        Ok::<(), String>(())
-    })
-    .await
-    .map_err(|e| e.to_string())?
-}
-
-pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path) {
-    let (source, _) = crate::file_management::parse_virtual_path(source_path);
-    let Some(entry) = registry::get(&source) else {
-        return;
-    };
-    let Ok(session) = session(app_handle) else {
-        return;
-    };
-    if !session.config.upload_exports {
-        return;
-    }
-
-    let app_handle = app_handle.clone();
-    let output = output_path.to_path_buf();
-    tauri::async_runtime::spawn(async move {
-        let file_name = output
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .unwrap_or_default();
-        let _ = app_handle.emit(
-            "immich-upload",
-            json!({ "state": "started", "fileName": file_name }),
-        );
-        if let Err(e) = sync::push(&session.client, &entry.asset_id, &source).await {
-            log::warn!("Could not send edits of {}: {e}", source.display());
-        }
-        let result = upload_export(&session, &source, &entry, &output).await;
-        let _ = app_handle.emit(
-            "immich-upload",
-            match &result {
-                Ok(()) => json!({ "state": "done", "fileName": file_name }),
-                Err(e) => json!({ "state": "error", "fileName": file_name, "error": e }),
-            },
-        );
-        if let Err(e) = result {
-            log::error!("Immich upload of {} failed: {e}", output.display());
-        }
-    });
-}
-
-async fn upload_export(
-    session: &Session,
-    source: &Path,
-    entry: &registry::RemoteImage,
-    output: &Path,
-) -> Result<(), String> {
-    let client = &session.client;
-    let modified = std::fs::metadata(output)
-        .and_then(|m| m.modified())
-        .map(chrono::DateTime::<chrono::Utc>::from)
-        .unwrap_or_else(|_| chrono::Utc::now())
-        .to_rfc3339();
-    let uploaded = client.upload(output, &modified, &modified).await?;
-    let new_id = uploaded.id;
-
-    // The listed asset is the previous export unless it is the original itself.
-    let previous = (entry.listed_asset_id != entry.asset_id && entry.listed_asset_id != new_id)
-        .then(|| entry.listed_asset_id.clone());
-    let replace = session.config.replace_previous_export && previous.is_some();
-
-    let mut albums: Vec<String> = entry.album_id.iter().cloned().collect();
-    if let (true, Some(previous)) = (replace, &previous) {
-        for album in client.albums_containing(previous).await.unwrap_or_default() {
-            if !albums.contains(&album.id) {
-                albums.push(album.id);
-            }
-        }
-    }
-    for album in &albums {
-        client.add_to_album(album, &[new_id.clone()]).await?;
-        if session.config.raw_leaves_album && entry.asset_id != new_id {
-            client
-                .remove_from_album(album, &[entry.asset_id.clone()])
-                .await?;
-        }
-    }
-
-    if entry.asset_id != new_id {
-        client
-            .create_stack(&[new_id.clone(), entry.asset_id.clone()])
-            .await?;
-    }
-
-    if let (true, Some(previous)) = (replace, previous) {
-        client.trash(&[previous]).await?;
-    }
-    if new_id != entry.asset_id {
-        registry::set_listed_asset(source, &new_id);
-    }
-    Ok(())
-}
-
-/// Moves Immich images to Immich's trash, together with their export, and
-/// returns the remaining paths for the caller to delete. The request runs in
-/// the background; meanwhile the images are left out of listings.
-pub fn trash_remote(app_handle: &AppHandle, paths: Vec<String>) -> Result<Vec<String>, String> {
-    let (remote, local): (Vec<_>, Vec<_>) = paths.into_iter().partition(|p| {
-        !p.contains("?vc=")
-            && registry::get(&crate::file_management::parse_virtual_path(p).0).is_some()
-    });
-    if remote.is_empty() {
-        return Ok(local);
-    }
-    let session = session(app_handle)?;
-
-    let mut ids = Vec::new();
-    let mut sources = Vec::new();
-    for path in &remote {
-        let (source, _) = crate::file_management::parse_virtual_path(path);
-        if let Some(entry) = registry::get(&source) {
-            for id in [entry.asset_id, entry.listed_asset_id] {
-                if !ids.contains(&id) {
-                    ids.push(id);
-                }
-            }
-            registry::remove(&source);
-            sources.push(source);
-        }
-    }
-    registry::mark_trashing(&ids);
-
-    let app_handle = app_handle.clone();
-    tauri::async_runtime::spawn(async move {
-        let result = session.client.trash(&ids).await;
-        registry::done_trashing(&ids);
-        match &result {
-            Ok(()) => {
-                for source in &sources {
-                    // Only ever remove an asset folder inside the cache.
-                    if let Some(folder) = source.parent()
-                        && folder.parent() == Some(session.cache_dir.as_path())
-                    {
-                        let _ = std::fs::remove_dir_all(folder);
-                    }
-                }
-            }
-            Err(e) => {
-                log::error!("Could not move images to Immich's trash: {e}");
-                let _ = app_handle.emit("immich-trash", json!({ "state": "error", "error": e }));
-            }
-        }
-        let _ = app_handle.emit("immich-library-changed", json!({}));
-    });
-    Ok(local)
-}
-
-/// `None` if `album_id` is not an Immich album. Local files are uploaded and
-/// moved into the cache; progress is reported through `immich-transfer`.
-pub fn add_to_album(
-    app_handle: &AppHandle,
-    album_id: &str,
-    paths: &[String],
-) -> Option<Result<(), String>> {
-    let target = album_id.strip_prefix(ALBUM_PREFIX)?;
-    // Pseudo albums such as "unassigned" have no UUID and only upload.
-    let album = uuid::Uuid::parse_str(target)
-        .ok()
-        .map(|_| target.to_string());
-    let session = match session(app_handle) {
-        Ok(session) => session,
-        Err(e) => return Some(Err(e)),
-    };
-    let app_handle = app_handle.clone();
-    let paths = paths.to_vec();
-    tauri::async_runtime::spawn(async move {
-        let total = paths.len();
-        let mut ids = Vec::new();
-        let mut failed = Vec::new();
-        for (index, path) in paths.iter().enumerate() {
-            let _ = app_handle.emit(
-                "immich-transfer",
-                json!({ "state": "progress", "current": index, "total": total }),
-            );
-            match asset_for(&session, path, album.as_deref()).await {
-                Ok(id) => ids.push(id),
-                Err(e) => {
-                    log::error!("Could not add {path} to Immich: {e}");
-                    failed.push(e);
-                }
-            }
-        }
-        if let Some(album) = &album
-            && !ids.is_empty()
-            && let Err(e) = session.client.add_to_album(album, &ids).await
-        {
-            failed.push(e);
-        }
-        let _ = app_handle.emit(
-            "immich-transfer",
-            json!({
-                "state": "done",
-                "added": ids.len(),
-                "failed": failed.len(),
-                "error": failed.first(),
-            }),
-        );
-        let _ = app_handle.emit("immich-library-changed", json!({}));
-    });
-    Some(Ok(()))
-}
-
-/// Must match `IMMICH_ALBUM_PREFIX` in the frontend.
-const ALBUM_PREFIX: &str = "immich:";
-
-async fn asset_for(session: &Session, path: &str, album: Option<&str>) -> Result<String, String> {
-    let (source, sidecar) = crate::file_management::parse_virtual_path(path);
-    if let Some(entry) = registry::get(&source) {
-        return Ok(entry.listed_asset_id);
-    }
-    if path.contains("?vc=") || !source.is_file() {
-        return Err(format!(
-            "{} is not a file that can be uploaded",
-            source.display()
-        ));
-    }
-
-    let modified = std::fs::metadata(&source)
-        .and_then(|m| m.modified())
-        .map(chrono::DateTime::<chrono::Utc>::from)
-        .unwrap_or_else(|_| chrono::Utc::now())
-        .to_rfc3339();
-    let id = session
-        .client
-        .upload(&source, &modified, &modified)
-        .await?
-        .id;
-
-    let file_name = source
-        .file_name()
-        .map(|n| n.to_owned())
-        .ok_or("Invalid file name")?;
-    let target = session.cache_dir.join(&id).join(&file_name);
-    std::fs::create_dir_all(target.parent().unwrap()).map_err(|e| e.to_string())?;
-    move_file(&source, &target)?;
-    if sidecar.exists() {
-        let _ = move_file(&sidecar, &sync::sidecar_of(&target));
-    }
-    let exif_cache = source.with_file_name(format!("{}.rrexif", file_name.to_string_lossy()));
-    if exif_cache.exists() {
-        let _ = move_file(
-            &exif_cache,
-            &target.with_file_name(format!("{}.rrexif", file_name.to_string_lossy())),
-        );
-    }
-
-    registry::insert(
-        target.clone(),
-        registry::RemoteImage {
-            asset_id: id.clone(),
-            listed_asset_id: id.clone(),
-            album_id: album.map(str::to_string),
-        },
-    );
-    sync::push(&session.client, &id, &target).await?;
-    Ok(id)
-}
-
-fn move_file(from: &Path, to: &Path) -> Result<(), String> {
-    if std::fs::rename(from, to).is_ok() {
-        return Ok(());
-    }
-    std::fs::copy(from, to).map_err(|e| format!("Cannot copy {}: {e}", from.display()))?;
-    std::fs::remove_file(from).map_err(|e| format!("Cannot remove {}: {e}", from.display()))
 }

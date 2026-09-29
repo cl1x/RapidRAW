@@ -10,11 +10,10 @@ use super::secrets;
 pub struct ImmichConfig {
     pub server_url: String,
     pub api_key: String,
-    pub prefer_raw: bool,
+    #[serde(alias = "preferRaw")]
+    pub open_stacked_raw: bool,
+    pub sync_edits: bool,
     pub upload_exports: bool,
-    pub replace_previous_export: bool,
-    /// Immich does not collapse stacks inside albums.
-    pub raw_leaves_album: bool,
     pub cache_dir: Option<String>,
     pub cache_limit_gb: u32,
     /// Set when saving; the key is then not stored in this file.
@@ -26,10 +25,9 @@ impl Default for ImmichConfig {
         Self {
             server_url: String::new(),
             api_key: String::new(),
-            prefer_raw: true,
+            open_stacked_raw: true,
+            sync_edits: true,
             upload_exports: true,
-            replace_previous_export: false,
-            raw_leaves_album: true,
             cache_dir: None,
             cache_limit_gb: 20,
             key_in_credential_store: false,
@@ -40,6 +38,14 @@ impl Default for ImmichConfig {
 impl ImmichConfig {
     pub fn is_configured(&self) -> bool {
         !self.server_url.trim().is_empty() && !self.api_key.trim().is_empty()
+    }
+
+    /// Whether switching to `other` may change which files belong to which
+    /// assets: another server, account or cache folder.
+    pub fn same_library(&self, other: &ImmichConfig) -> bool {
+        self.server_url.trim() == other.server_url.trim()
+            && self.api_key.trim() == other.api_key.trim()
+            && self.cache_dir == other.cache_dir
     }
 }
 
