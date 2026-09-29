@@ -27,13 +27,17 @@ export const ImmichInvokes = {
   Timeline: 'immich_timeline',
 } as const;
 
+export type ImmichAlbumSort = 'name' | 'newest' | 'oldest';
+
 export interface ImmichConfig {
   serverUrl: string;
   apiKey: string;
+  albumSort: ImmichAlbumSort;
   openStackedRaw: boolean;
   listingLimit: number;
   syncEdits: boolean;
   uploadExports: boolean;
+  exportsToAlbum: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
   keyInCredentialStore: boolean;

@@ -5,18 +5,29 @@ use tauri::{AppHandle, Manager};
 
 use super::secrets;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum AlbumSort {
+    #[default]
+    Name,
+    Newest,
+    Oldest,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ImmichConfig {
     pub server_url: String,
     pub api_key: String,
     #[serde(alias = "preferRaw")]
+    pub album_sort: AlbumSort,
     pub open_stacked_raw: bool,
     /// The library reads the EXIF data of every listed image, which gets slow
     /// for large listings.
     pub listing_limit: u32,
     pub sync_edits: bool,
     pub upload_exports: bool,
+    pub exports_to_album: bool,
     pub cache_dir: Option<String>,
     pub cache_limit_gb: u32,
     /// Set when saving; the key is then not stored in this file.
@@ -28,10 +39,12 @@ impl Default for ImmichConfig {
         Self {
             server_url: String::new(),
             api_key: String::new(),
+            album_sort: AlbumSort::Name,
             open_stacked_raw: true,
             listing_limit: 2000,
             sync_edits: true,
             upload_exports: true,
+            exports_to_album: true,
             cache_dir: None,
             cache_limit_gb: 20,
             key_in_credential_store: false,
