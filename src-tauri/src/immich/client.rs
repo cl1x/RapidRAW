@@ -58,7 +58,9 @@ pub struct User {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Stack {
+    pub primary_asset_id: String,
     pub assets: Vec<Asset>,
 }
 

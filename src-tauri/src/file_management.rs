@@ -3524,7 +3524,7 @@ pub fn show_in_finder(path: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn delete_files_from_disk(paths: Vec<String>, app_handle: AppHandle) -> Result<(), String> {
-    let paths = crate::immich::trash_remote(&app_handle, paths)?;
+    let paths = crate::immich::trash_remote(&app_handle, paths, false)?;
     let mut files_to_trash = HashSet::new();
     let mut deletions = HashSet::new();
 
@@ -3629,7 +3629,7 @@ pub fn delete_files_with_associated(
     paths: Vec<String>,
     app_handle: AppHandle,
 ) -> Result<(), String> {
-    let paths = crate::immich::trash_remote(&app_handle, paths)?;
+    let paths = crate::immich::trash_remote(&app_handle, paths, true)?;
     if paths.is_empty() {
         return Ok(());
     }
