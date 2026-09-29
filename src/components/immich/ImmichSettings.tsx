@@ -2,12 +2,14 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, FileLock, Lock, PlugZap, Save, XCircle } from 'lucide-react';
 import Button from '../ui/Button';
+import Dropdown from '../ui/Dropdown';
 import Input from '../ui/Input';
 import Switch from '../ui/Switch';
 import Text from '../ui/Text';
 import { TextColors, TextVariants } from '../../types/typography';
 import {
   getImmichConfig,
+  ImmichAlbumSort,
   ImmichConfig,
   ImmichConnectionInfo,
   saveImmichConfig,
@@ -102,6 +104,11 @@ export default function ImmichSettings() {
     }
   };
 
+  const albumSortOptions: { value: ImmichAlbumSort; label: string }[] = [
+    { value: 'name', label: t('immich.settings.albumSortName') },
+    { value: 'newest', label: t('immich.settings.albumSortNewest') },
+    { value: 'oldest', label: t('immich.settings.albumSortOldest') },
+  ];
   const isBusy = status.kind === 'busy';
   const hasCredentials = !!serverUrl.trim() && !!apiKey.trim();
   const connectionChanged = serverUrl.trim() !== saved.serverUrl || apiKey.trim() !== saved.apiKey;
@@ -156,13 +163,13 @@ export default function ImmichSettings() {
         </div>
       </Card>
 
-      <Card title={t('immich.settings.workingTitle')}>
-        <Item label={t('immich.settings.openStackedRaw')} description={t('immich.settings.openStackedRawDesc')}>
-          <Switch
-            id="immich-open-stacked-raw"
-            label={t('immich.settings.openStackedRawSwitch')}
-            checked={saved.openStackedRaw}
-            onChange={(openStackedRaw) => saveOption({ openStackedRaw })}
+      <Card title={t('immich.settings.libraryTitle')}>
+        <Item label={t('immich.settings.albumSort')} description={t('immich.settings.albumSortDesc')}>
+          <Dropdown
+            className="max-w-64"
+            value={saved.albumSort}
+            options={albumSortOptions}
+            onChange={(albumSort) => saveOption({ albumSort })}
           />
         </Item>
         <Item label={t('immich.settings.listingLimit')} description={t('immich.settings.listingLimitDesc')}>
@@ -177,6 +184,17 @@ export default function ImmichSettings() {
             bgClassName="bg-bg-primary"
           />
         </Item>
+        <Item label={t('immich.settings.openStackedRaw')} description={t('immich.settings.openStackedRawDesc')}>
+          <Switch
+            id="immich-open-stacked-raw"
+            label={t('immich.settings.openStackedRawSwitch')}
+            checked={saved.openStackedRaw}
+            onChange={(openStackedRaw) => saveOption({ openStackedRaw })}
+          />
+        </Item>
+      </Card>
+
+      <Card title={t('immich.settings.editingTitle')}>
         <Item label={t('immich.settings.syncEdits')} description={t('immich.settings.syncEditsDesc')}>
           <Switch
             id="immich-sync-edits"
@@ -191,6 +209,15 @@ export default function ImmichSettings() {
             label={t('immich.settings.uploadExportsSwitch')}
             checked={saved.uploadExports}
             onChange={(uploadExports) => saveOption({ uploadExports })}
+          />
+        </Item>
+        <Item label={t('immich.settings.exportsToAlbum')} description={t('immich.settings.exportsToAlbumDesc')}>
+          <Switch
+            id="immich-exports-to-album"
+            label={t('immich.settings.exportsToAlbumSwitch')}
+            checked={saved.exportsToAlbum}
+            disabled={!saved.uploadExports}
+            onChange={(exportsToAlbum) => saveOption({ exportsToAlbum })}
           />
         </Item>
       </Card>

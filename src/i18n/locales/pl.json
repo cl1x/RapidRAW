@@ -984,6 +984,11 @@
       "unassignedHint": ""
     },
     "settings": {
+      "albumSort": "",
+      "albumSortDesc": "",
+      "albumSortName": "",
+      "albumSortNewest": "",
+      "albumSortOldest": "",
       "apiKey": "",
       "apiKeyDesc": "",
       "cacheDir": "",
@@ -996,8 +1001,13 @@
       "connected": "",
       "connectionTitle": "",
       "description": "",
+      "editingTitle": "",
+      "exportsToAlbum": "",
+      "exportsToAlbumDesc": "",
+      "exportsToAlbumSwitch": "",
       "keyInFile": "",
       "keyInStore": "",
+      "libraryTitle": "",
       "listingLimit": "",
       "listingLimitDesc": "",
       "openStackedRaw": "",
@@ -1014,8 +1024,7 @@
       "uploadExports": "",
       "uploadExportsDesc": "",
       "uploadExportsSwitch": "",
-      "working": "",
-      "workingTitle": ""
+      "working": ""
     },
     "toasts": {
       "downloadFailed": "",

@@ -938,6 +938,11 @@
       "unassignedHint": "Bilder hierher ziehen, um sie ohne Album hochzuladen."
     },
     "settings": {
+      "albumSort": "Reihenfolge der Alben",
+      "albumSortDesc": "Wie die Alben in der Seitenleiste sortiert sind. Nach Datum heißt: nach dem neuesten bzw. ältesten Foto im Album.",
+      "albumSortName": "Nach Name",
+      "albumSortNewest": "Neueste zuerst",
+      "albumSortOldest": "Älteste zuerst",
       "apiKey": "API-Schlüssel",
       "apiKeyDesc": "In Immich unter Kontoeinstellungen → API-Schlüssel anlegen. Er braucht Zugriff auf Alben und Assets sowie das Recht zum Hochladen.",
       "cacheDir": "Cache-Ordner",
@@ -950,8 +955,13 @@
       "connected": "Verbunden als {{user}} (Immich {{version}})",
       "connectionTitle": "Immich",
       "description": "Zeigt die Fotos deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen.",
+      "editingTitle": "Bearbeiten und Exportieren",
+      "exportsToAlbum": "Exporte ins Album legen",
+      "exportsToAlbumDesc": "Der Export kommt in das Album, aus dem das Bild geöffnet wurde, anstelle eines früheren Exports. Ausgeschaltet werden Exporte nur hochgeladen und gestapelt, Alben bleiben unverändert.",
+      "exportsToAlbumSwitch": "Ins Album legen",
       "keyInFile": "In einer Datei gespeichert, die nur du lesen kannst: Es ist kein Schlüsselbund erreichbar. Unter KDE in den Einstellungen der KDE-Brieftasche die Secret-Service-Schnittstelle einschalten und erneut speichern.",
       "keyInStore": "Im Schlüsselbund des Systems gespeichert.",
+      "libraryTitle": "Bibliothek",
       "listingLimit": "Bilder pro Liste",
       "listingLimitDesc": "Listen zeigen höchstens so viele Bilder, die neuesten zuerst; an die übrigen kommst du über die Zeitleiste oder den Filter. RapidRAW liest die Details jedes gelisteten Bildes, große Werte machen Listen daher langsam. Zwischen 100 und 50.000.",
       "openStackedRaw": "Bei Stapeln das RAW öffnen",
@@ -966,10 +976,9 @@
       "syncEditsSwitch": "Bearbeitungen abgleichen",
       "test": "Verbindung testen",
       "uploadExports": "Exporte hochladen",
-      "uploadExportsDesc": "Exporte von Immich-Bildern landen im Album, aus dem sie geöffnet wurden, gestapelt über ihrem Original. Ein früherer Export des Bildes wird in seinen Alben ersetzt und bleibt im Stapel.",
+      "uploadExportsDesc": "Exporte von Immich-Bildern werden hochgeladen und über ihrem Original gestapelt.",
       "uploadExportsSwitch": "Zu Immich hochladen",
-      "working": "Einen Moment…",
-      "workingTitle": "Arbeiten mit Immich"
+      "working": "Einen Moment…"
     },
     "toasts": {
       "downloadFailed": "Download aus Immich fehlgeschlagen: {{error}}",
