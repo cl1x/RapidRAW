@@ -3,7 +3,7 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 
 use super::client::{Album, ImmichClient, Person, TimelineMonth};
-use super::config::{self, ImmichConfig};
+use super::config::{self, AlbumSort, ImmichConfig};
 use super::{registry, reset_session, resolve, session};
 use crate::file_management::ImageFile;
 
@@ -48,6 +48,17 @@ pub async fn immich_list_albums(app_handle: AppHandle) -> Result<Vec<Album>, Str
     let session = session(&app_handle)?;
     let mut albums = session.client.albums().await?;
     albums.sort_by_key(|a| a.album_name.to_lowercase());
+    // ISO dates sort as text; albums without photos have none and go last.
+    match session.config.album_sort {
+        AlbumSort::Name => {}
+        AlbumSort::Newest => albums.sort_by(|a, b| b.end_date.cmp(&a.end_date)),
+        AlbumSort::Oldest => albums.sort_by(|a, b| match (&a.start_date, &b.start_date) {
+            (Some(x), Some(y)) => x.cmp(y),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        }),
+    }
     Ok(albums)
 }
 

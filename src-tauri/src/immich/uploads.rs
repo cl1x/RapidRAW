@@ -49,9 +49,9 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
     });
 }
 
-/// The export goes on top of the stack of its original and into the album the
-/// image was opened from. A previous export of the same image is replaced in
-/// its albums but stays in the stack.
+/// The export goes on top of the stack of its original and, if so set, into
+/// the album the image was opened from. A previous export of the same image is
+/// then replaced in its albums but stays in the stack.
 async fn upload_export(
     session: &Session,
     source: &Path,
@@ -69,9 +69,12 @@ async fn upload_export(
     let previous = (entry.listed_asset_id != entry.asset_id && entry.listed_asset_id != new_id)
         .then(|| entry.listed_asset_id.clone());
 
-    let mut albums: Vec<String> = entry.album_id.iter().cloned().collect();
+    let mut albums: Vec<String> = Vec::new();
     let mut replaced_in = Vec::new();
-    if let Some(previous) = &previous {
+    if session.config.exports_to_album {
+        albums.extend(entry.album_id.iter().cloned());
+    }
+    if let (true, Some(previous)) = (session.config.exports_to_album, &previous) {
         for album in client.albums_containing(previous).await.unwrap_or_default() {
             if !albums.contains(&album.id) {
                 albums.push(album.id.clone());
