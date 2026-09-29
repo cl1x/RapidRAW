@@ -161,7 +161,7 @@ pub async fn listing(
         StackIndex::new(Vec::new())
     };
     let assets = if filter.not_in_album {
-        without_developed_raws(assets, &stacks)
+        without_sorted_stacks(assets, &stacks)
     } else {
         assets
     };
@@ -211,22 +211,22 @@ fn resolve(
     resolved
 }
 
-/// A RAW whose export is in an album counts as sorted.
-fn without_developed_raws(assets: Vec<Asset>, stacks: &StackIndex) -> Vec<Asset> {
+/// Albums hold only the top of a stack, so a stack counts as sorted as soon
+/// as any of its images is in an album.
+fn without_sorted_stacks(assets: Vec<Asset>, stacks: &StackIndex) -> Vec<Asset> {
     let unassigned: HashSet<&str> = assets.iter().map(|a| a.id.as_str()).collect();
-    let developed: HashSet<String> = assets
+    let sorted: HashSet<String> = assets
         .iter()
-        .filter(|a| is_raw(a))
-        .filter(|raw| {
+        .filter(|a| {
             stacks
-                .companions(raw)
-                .any(|c| !is_raw(c) && !unassigned.contains(c.id.as_str()))
+                .companions(a)
+                .any(|c| !unassigned.contains(c.id.as_str()))
         })
-        .map(|raw| raw.id.clone())
+        .map(|a| a.id.clone())
         .collect();
     assets
         .into_iter()
-        .filter(|a| !developed.contains(&a.id))
+        .filter(|a| !sorted.contains(&a.id))
         .collect()
 }
 
@@ -281,16 +281,20 @@ mod tests {
     }
 
     #[test]
-    fn leaves_developed_raws_out_of_images_in_no_album() {
-        // The export is in an album, so it is not part of the listing.
-        let stacks = StackIndex::new(vec![stack(vec![
-            asset("j", "DSC1_edited.jpg"),
-            asset("r", "DSC1.ARW"),
-        ])]);
-        let undeveloped = asset("u", "DSC2.ARW");
-        let kept = without_developed_raws(vec![asset("r", "DSC1.ARW"), undeveloped], &stacks);
+    fn stacks_with_an_image_in_an_album_count_as_sorted() {
+        // "j" and "b1" are in albums, so they are not part of the listing.
+        let stacks = StackIndex::new(vec![
+            stack(vec![asset("j", "DSC1_edited.jpg"), asset("r", "DSC1.ARW")]),
+            stack(vec![asset("b1", "DSC3.jpg"), asset("b2", "DSC4.jpg")]),
+            stack(vec![
+                asset("o1", "DSC5_edited.jpg"),
+                asset("o2", "DSC5.ARW"),
+            ]),
+        ]);
+        let listing = ["r", "b2", "o1", "o2", "u"].map(|id| asset(id, "x.jpg"));
+        let kept = without_sorted_stacks(listing.to_vec(), &stacks);
         let ids: Vec<_> = kept.iter().map(|a| a.id.as_str()).collect();
-        assert_eq!(ids, ["u"]);
+        assert_eq!(ids, ["o1", "o2", "u"]);
     }
 
     #[test]
