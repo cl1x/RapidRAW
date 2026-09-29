@@ -1102,7 +1102,7 @@ export default function SettingsPanel({
               </Text>
             </div>
 
-            <div className="relative flex w-full min-[1200px]:w-112.5 p-2 bg-surface rounded-md">
+            <div className="relative flex w-full min-[1200px]:w-150 p-2 bg-surface rounded-md">
               {settingCategories.map((category) => (
                 <button
                   key={category.id}

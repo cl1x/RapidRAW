@@ -30,10 +30,9 @@ export const ImmichInvokes = {
 export interface ImmichConfig {
   serverUrl: string;
   apiKey: string;
-  preferRaw: boolean;
+  openStackedRaw: boolean;
+  syncEdits: boolean;
   uploadExports: boolean;
-  replacePreviousExport: boolean;
-  rawLeavesAlbum: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
   keyInCredentialStore: boolean;
