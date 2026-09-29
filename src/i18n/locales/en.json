@@ -988,6 +988,8 @@
       "description": "Browse the photos of your Immich server in the library and edit them directly. Originals are downloaded when you open them.",
       "keyInFile": "Stored in a file only you can read: no credential store is available. On KDE, turn on the Secret Service interface in the KDE Wallet settings and save again.",
       "keyInStore": "Stored in the system's credential store.",
+      "listingLimit": "Images per listing",
+      "listingLimitDesc": "Listings show at most this many images, newest first; the timeline and the filter reach the others. RapidRAW reads the details of every listed image, so large numbers make listings slow. Between 100 and 50,000.",
       "openStackedRaw": "Open the RAW of stacked images",
       "openStackedRawDesc": "An export stacked on top of its RAW opens as the RAW, which is what you edit. When off, images open as they are.",
       "openStackedRawSwitch": "Open RAW",
@@ -1013,7 +1015,7 @@
       "transferred_other": "{{count}} images added to Immich",
       "transferring": "Adding to Immich… {{current}}/{{total}}",
       "trashFailed": "Could not move the images to Immich's trash: {{error}}",
-      "truncated": "Showing the newest {{limit}} images. Use the timeline or a filter to see the others.",
+      "truncated": "Showing the newest {{limit}} images. The timeline or a filter reach the others, or raise the number in Settings → Immich.",
       "uploadFailed": "Upload of {{fileName}} to Immich failed: {{error}}",
       "uploaded": "{{fileName}} uploaded to Immich"
     }

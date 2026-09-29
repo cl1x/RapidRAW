@@ -165,6 +165,18 @@ export default function ImmichSettings() {
             onChange={(openStackedRaw) => saveOption({ openStackedRaw })}
           />
         </Item>
+        <Item label={t('immich.settings.listingLimit')} description={t('immich.settings.listingLimitDesc')}>
+          <Input
+            type="number"
+            value={String(saved.listingLimit)}
+            onChange={(e) => setSaved({ ...saved, listingLimit: Number(e.target.value) })}
+            onBlur={() =>
+              saveOption({ listingLimit: Math.min(50000, Math.max(100, Math.round(saved.listingLimit || 2000))) })
+            }
+            className="max-w-32"
+            bgClassName="bg-bg-primary"
+          />
+        </Item>
         <Item label={t('immich.settings.syncEdits')} description={t('immich.settings.syncEditsDesc')}>
           <Switch
             id="immich-sync-edits"
