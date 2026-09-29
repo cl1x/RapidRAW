@@ -10,10 +10,6 @@ use super::client::{Asset, ImmichClient, Stack};
 use super::config::ImmichConfig;
 use super::registry::{self, RemoteImage};
 
-/// The library reads the EXIF data of every listed image, which gets slow
-/// beyond this. Larger sets are reached through the timeline or a filter.
-pub const LISTING_LIMIT: usize = 2000;
-
 #[derive(Debug, Clone)]
 pub struct Resolved {
     pub path: PathBuf,
@@ -154,7 +150,8 @@ pub async fn listing(
 ) -> Result<(Vec<Resolved>, bool), String> {
     let mut query = filter.to_query();
     query["order"] = json!("desc");
-    let (found, truncated) = client.search_up_to(query, Some(LISTING_LIMIT)).await?;
+    let limit = config.listing_limit.clamp(100, 50_000) as usize;
+    let (found, truncated) = client.search_up_to(query, Some(limit)).await?;
     let assets: Vec<Asset> = found
         .into_iter()
         .filter(|a| a.kind == "IMAGE" && !registry::is_trashing(&a.id))

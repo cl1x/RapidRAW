@@ -93,7 +93,7 @@ pub async fn immich_get_images(
     if truncated {
         let _ = app_handle.emit(
             "immich-listing-truncated",
-            json!({ "limit": resolve::LISTING_LIMIT }),
+            json!({ "limit": session.config.listing_limit.clamp(100, 50_000) }),
         );
     }
 

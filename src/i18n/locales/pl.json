@@ -1034,6 +1034,8 @@
       "description": "",
       "keyInFile": "",
       "keyInStore": "",
+      "listingLimit": "",
+      "listingLimitDesc": "",
       "openStackedRaw": "",
       "openStackedRawDesc": "",
       "openStackedRawSwitch": "",
