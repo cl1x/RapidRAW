@@ -15,7 +15,7 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
     let Ok(session) = session(app_handle) else {
         return;
     };
-    if !session.config.upload_exports {
+    if !session.settings.upload_exports {
         return;
     }
 
@@ -30,7 +30,7 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
             "immich-upload",
             json!({ "state": "started", "fileName": file_name }),
         );
-        if session.config.sync_edits
+        if session.syncs_edits().await
             && let Err(e) = sync::push(&session.client, &entry.asset_id, &source).await
         {
             log::warn!("Could not send edits of {}: {e}", source.display());
@@ -50,8 +50,8 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
 }
 
 /// The export goes on top of the stack of its original and, if so set, into
-/// the album the image was opened from. A previous export of the same image is
-/// then replaced in its albums but stays in the stack.
+/// the album the image was opened from, where it may also replace a previous
+/// export of the same image. A previous export always stays in the stack.
 async fn upload_export(
     session: &Session,
     source: &Path,
@@ -71,10 +71,11 @@ async fn upload_export(
 
     let mut albums: Vec<String> = Vec::new();
     let mut replaced_in = Vec::new();
-    if session.config.exports_to_album {
+    if session.settings.exports_to_album {
         albums.extend(entry.album_id.iter().cloned());
     }
-    if let (true, Some(previous)) = (session.config.exports_to_album, &previous) {
+    let replace = session.settings.exports_to_album && session.settings.replace_previous_export;
+    if let (true, Some(previous)) = (replace, &previous) {
         for album in client.albums_containing(previous).await.unwrap_or_default() {
             if !albums.contains(&album.id) {
                 albums.push(album.id.clone());
@@ -83,14 +84,18 @@ async fn upload_export(
         }
     }
     for album in &albums {
-        client.add_to_album(album, &[new_id.clone()]).await?;
+        client
+            .add_to_album(album, std::slice::from_ref(&new_id))
+            .await?;
     }
     client
         .create_stack(&[new_id.clone(), entry.asset_id.clone()])
         .await?;
     if let Some(previous) = previous {
         for album in &replaced_in {
-            client.remove_from_album(album, &[previous.clone()]).await?;
+            client
+                .remove_from_album(album, std::slice::from_ref(&previous))
+                .await?;
         }
     }
     registry::set_listed_asset(source, &new_id);
@@ -193,7 +198,7 @@ async fn asset_for(session: &Session, path: &str, album: Option<&str>) -> Result
             album_id: album.map(str::to_string),
         },
     );
-    if session.config.sync_edits {
+    if session.syncs_edits().await {
         sync::push(&session.client, &id, &target).await?;
     }
     Ok(id)

@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use super::client::{Asset, ImmichClient, Stack};
-use super::config::ImmichConfig;
+use super::config::ImmichSettings;
 use super::registry::{self, RemoteImage};
 
 #[derive(Debug, Clone)]
@@ -144,13 +144,13 @@ impl StackIndex {
 
 pub async fn listing(
     client: &ImmichClient,
-    config: &ImmichConfig,
+    settings: &ImmichSettings,
     filter: &Filter,
     cache_dir: &Path,
 ) -> Result<(Vec<Resolved>, bool), String> {
     let mut query = filter.to_query();
     query["order"] = json!("desc");
-    let limit = config.listing_limit.clamp(100, 50_000) as usize;
+    let limit = settings.listing_limit.clamp(100, 50_000) as usize;
     let (found, truncated) = client.search_up_to(query, Some(limit)).await?;
     let assets: Vec<Asset> = found
         .into_iter()
@@ -158,7 +158,7 @@ pub async fn listing(
         .collect();
 
     // One request for all stacks is far cheaper than one per image.
-    let stacks = if config.open_stacked_raw || filter.not_in_album {
+    let stacks = if settings.open_stacked_raw || filter.not_in_album {
         StackIndex::new(client.stacks().await?)
     } else {
         StackIndex::new(Vec::new())
@@ -171,7 +171,7 @@ pub async fn listing(
     let resolved = resolve(
         &assets,
         &stacks,
-        config.open_stacked_raw,
+        settings.open_stacked_raw,
         filter.album_id.as_deref(),
         cache_dir,
     );

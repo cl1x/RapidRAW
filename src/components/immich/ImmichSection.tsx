@@ -11,6 +11,7 @@ import ImmichFilterForm, { describeFilter } from './ImmichFilterForm';
 import ImmichRow from './ImmichRow';
 import ImmichTimeline from './ImmichTimeline';
 import { useImmichStore } from './useImmichStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 interface ImmichSectionProps {
   header: ReactNode;
@@ -42,11 +43,13 @@ export default function ImmichSection({
       loadAlbums: state.loadAlbums,
     })),
   );
+  const serverUrl = useSettingsStore((state) => state.appSettings?.immich?.serverUrl);
+  const albumSort = useSettingsStore((state) => state.appSettings?.immich?.albumSort);
   const [isFilterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, serverUrl, albumSort]);
 
   const query = searchQuery.trim().toLowerCase();
   const visibleAlbums = useMemo(

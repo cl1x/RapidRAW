@@ -173,7 +173,7 @@ pub fn start_loop(app_handle: &AppHandle) {
             let Ok(session) = session(&app_handle) else {
                 continue;
             };
-            if !session.config.sync_edits {
+            if !session.syncs_edits().await {
                 continue;
             }
             for (path, entry) in registry::all() {

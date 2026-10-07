@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import { useSettingsStore } from '../../store/useSettingsStore';
 import {
-  getImmichConfig,
+  getImmichApiKey,
   ImmichAlbum,
   ImmichFilter,
   ImmichTimelineMonth,
@@ -39,8 +40,9 @@ export const useImmichStore = create<ImmichState>((set, get) => ({
 
   refresh: async () => {
     try {
-      const config = await getImmichConfig();
-      const isConfigured = !!config.serverUrl.trim() && !!config.apiKey.trim();
+      const serverUrl = useSettingsStore.getState().appSettings?.immich?.serverUrl ?? '';
+      const { apiKey } = await getImmichApiKey();
+      const isConfigured = !!serverUrl.trim() && !!apiKey.trim();
       set({ isConfigured, ...(isConfigured ? {} : { albums: [], error: null }) });
       if (isConfigured) await get().loadAlbums();
     } catch (err) {

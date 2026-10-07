@@ -163,14 +163,14 @@ impl ImmichClient {
             .map_err(|e| format!("Unexpected answer from Immich ({what}): {e}"))
     }
 
-    pub async fn version(&self) -> Result<String, String> {
+    pub async fn version_numbers(&self) -> Result<(u32, u32, u32), String> {
         let v: Version = self
             .json(
                 self.request(Method::GET, "/server/version"),
                 "server version",
             )
             .await?;
-        Ok(format!("{}.{}.{}", v.major, v.minor, v.patch))
+        Ok((v.major, v.minor, v.patch))
     }
 
     pub async fn me(&self) -> Result<User, String> {

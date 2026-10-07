@@ -17,8 +17,8 @@ export const isImmichFilterId = (albumId: string | null | undefined) =>
   isImmichAlbumId(albumId) && albumId.startsWith(`${IMMICH_ALBUM_PREFIX}${FILTER_MARKER}`);
 
 export const ImmichInvokes = {
-  GetConfig: 'immich_get_config',
-  SaveConfig: 'immich_save_config',
+  GetApiKey: 'immich_get_api_key',
+  SetApiKey: 'immich_set_api_key',
   TestConnection: 'immich_test_connection',
   ListAlbums: 'immich_list_albums',
   GetImages: 'immich_get_images',
@@ -29,18 +29,35 @@ export const ImmichInvokes = {
 
 export type ImmichAlbumSort = 'name' | 'newest' | 'oldest';
 
-export interface ImmichConfig {
+export interface ImmichSettings {
   serverUrl: string;
-  apiKey: string;
   albumSort: ImmichAlbumSort;
   openStackedRaw: boolean;
   listingLimit: number;
   syncEdits: boolean;
   uploadExports: boolean;
   exportsToAlbum: boolean;
+  replacePreviousExport: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
-  keyInCredentialStore: boolean;
+}
+
+export const DEFAULT_IMMICH_SETTINGS: ImmichSettings = {
+  serverUrl: '',
+  albumSort: 'name',
+  openStackedRaw: true,
+  listingLimit: 2000,
+  syncEdits: true,
+  uploadExports: true,
+  exportsToAlbum: true,
+  replacePreviousExport: false,
+  cacheDir: null,
+  cacheLimitGb: 20,
+};
+
+export interface ImmichApiKeyInfo {
+  apiKey: string;
+  inCredentialStore: boolean;
 }
 
 export interface ImmichAlbum {
@@ -67,6 +84,7 @@ export interface ImmichConnectionInfo {
   version: string;
   userName: string;
   userEmail: string;
+  supportsEdits: boolean;
 }
 
 // Mirrors `resolve::Filter` in the backend.
@@ -102,9 +120,9 @@ export const albumIdToFilter = (albumId: string): ImmichFilter => {
   return { albumId: rest };
 };
 
-export const getImmichConfig = () => invoke<ImmichConfig>(ImmichInvokes.GetConfig);
+export const getImmichApiKey = () => invoke<ImmichApiKeyInfo>(ImmichInvokes.GetApiKey);
 
-export const saveImmichConfig = (config: ImmichConfig) => invoke<void>(ImmichInvokes.SaveConfig, { config });
+export const setImmichApiKey = (apiKey: string) => invoke<ImmichApiKeyInfo>(ImmichInvokes.SetApiKey, { apiKey });
 
 export const testImmichConnection = (serverUrl: string, apiKey: string) =>
   invoke<ImmichConnectionInfo>(ImmichInvokes.TestConnection, { serverUrl, apiKey });

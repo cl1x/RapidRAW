@@ -3,8 +3,8 @@ use serde_json::json;
 use tauri::{AppHandle, Emitter};
 
 use super::client::{Album, ImmichClient, Person, TimelineMonth};
-use super::config::{self, AlbumSort, ImmichConfig};
-use super::{registry, reset_session, resolve, session};
+use super::config::{self, AlbumSort, ApiKeyInfo};
+use super::{MIN_VERSION, MIN_VERSION_FOR_EDITS, registry, reset_session, resolve, session};
 use crate::file_management::ImageFile;
 
 #[derive(Serialize)]
@@ -13,19 +13,19 @@ pub struct ConnectionInfo {
     pub version: String,
     pub user_name: String,
     pub user_email: String,
+    pub supports_edits: bool,
 }
 
 #[tauri::command]
-pub fn immich_get_config(app_handle: AppHandle) -> ImmichConfig {
-    config::load(&app_handle)
+pub fn immich_get_api_key(app_handle: AppHandle) -> ApiKeyInfo {
+    config::load_api_key(&app_handle)
 }
 
 #[tauri::command]
-pub fn immich_save_config(config: ImmichConfig, app_handle: AppHandle) -> Result<(), String> {
-    let previous = config::load(&app_handle);
-    config::save(&app_handle, &config)?;
-    reset_session(!previous.same_library(&config));
-    Ok(())
+pub fn immich_set_api_key(api_key: String, app_handle: AppHandle) -> Result<ApiKeyInfo, String> {
+    let info = config::save_api_key(&app_handle, &api_key)?;
+    reset_session(true);
+    Ok(info)
 }
 
 #[tauri::command]
@@ -34,12 +34,20 @@ pub async fn immich_test_connection(
     api_key: String,
 ) -> Result<ConnectionInfo, String> {
     let client = ImmichClient::new(&server_url, &api_key)?;
-    let version = client.version().await?;
+    let version = client.version_numbers().await?;
+    let version_text = format!("{}.{}.{}", version.0, version.1, version.2);
+    if version < MIN_VERSION {
+        return Err(format!(
+            "Immich {version_text} is too old. RapidRAW needs Immich {}.{}.{} or newer.",
+            MIN_VERSION.0, MIN_VERSION.1, MIN_VERSION.2
+        ));
+    }
     let user = client.me().await?;
     Ok(ConnectionInfo {
-        version,
+        version: version_text,
         user_name: user.name,
         user_email: user.email,
+        supports_edits: version >= MIN_VERSION_FOR_EDITS,
     })
 }
 
@@ -49,7 +57,7 @@ pub async fn immich_list_albums(app_handle: AppHandle) -> Result<Vec<Album>, Str
     let mut albums = session.client.albums().await?;
     albums.sort_by_key(|a| a.album_name.to_lowercase());
     // ISO dates sort as text; albums without photos have none and go last.
-    match session.config.album_sort {
+    match session.settings.album_sort {
         AlbumSort::Name => {}
         AlbumSort::Newest => albums.sort_by(|a, b| b.end_date.cmp(&a.end_date)),
         AlbumSort::Oldest => albums.sort_by(|a, b| match (&a.start_date, &b.start_date) {
@@ -96,7 +104,7 @@ pub async fn immich_get_images(
     let session = session(&app_handle)?;
     let (resolved, truncated) = resolve::listing(
         &session.client,
-        &session.config,
+        &session.settings,
         &filter,
         &session.cache_dir,
     )
@@ -104,7 +112,7 @@ pub async fn immich_get_images(
     if truncated {
         let _ = app_handle.emit(
             "immich-listing-truncated",
-            json!({ "limit": session.config.listing_limit.clamp(100, 50_000) }),
+            json!({ "limit": session.settings.listing_limit.clamp(100, 50_000) }),
         );
     }
 
