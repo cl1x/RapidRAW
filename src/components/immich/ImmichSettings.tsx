@@ -8,14 +8,17 @@ import Switch from '../ui/Switch';
 import Text from '../ui/Text';
 import { TextColors, TextVariants } from '../../types/typography';
 import {
-  getImmichConfig,
+  DEFAULT_IMMICH_SETTINGS,
+  getImmichApiKey,
   ImmichAlbumSort,
-  ImmichConfig,
+  ImmichApiKeyInfo,
   ImmichConnectionInfo,
-  saveImmichConfig,
+  ImmichSettings as ImmichSettingsValues,
+  setImmichApiKey,
   testImmichConnection,
 } from './immichApi';
 import { useImmichStore } from './useImmichStore';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 type Status =
   | { kind: 'idle' }
@@ -51,44 +54,48 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-// Server address and key are saved together once they are complete; every
-// other option is saved as soon as it changes, like the rest of the settings.
 export default function ImmichSettings() {
   const { t } = useTranslation();
   const refreshImmich = useImmichStore((state) => state.refresh);
-  const [saved, setSaved] = useState<ImmichConfig | null>(null);
+  const appSettings = useSettingsStore((state) => state.appSettings);
+  const handleSettingsChange = useSettingsStore((state) => state.handleSettingsChange);
+  const [keyInfo, setKeyInfo] = useState<ImmichApiKeyInfo | null>(null);
   const [serverUrl, setServerUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [draft, setDraft] = useState<Partial<ImmichSettingsValues>>({});
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
+  const saved: ImmichSettingsValues = { ...DEFAULT_IMMICH_SETTINGS, ...appSettings?.immich };
+  const shown: ImmichSettingsValues = { ...saved, ...draft };
+
   useEffect(() => {
-    getImmichConfig()
-      .then((config) => {
-        setSaved(config);
-        setServerUrl(config.serverUrl);
-        setApiKey(config.apiKey);
+    getImmichApiKey()
+      .then((info) => {
+        setKeyInfo(info);
+        setApiKey(info.apiKey);
       })
       .catch((err) => setStatus({ kind: 'error', message: String(err) }));
   }, []);
 
-  if (!saved) return null;
+  useEffect(() => {
+    setServerUrl(appSettings?.immich?.serverUrl ?? '');
+  }, [appSettings?.immich?.serverUrl]);
 
-  const store = async (config: ImmichConfig) => {
-    await saveImmichConfig(config);
-    const reloaded = await getImmichConfig();
-    setSaved(reloaded);
-    await refreshImmich();
-    return reloaded;
-  };
+  if (!appSettings || !keyInfo) return null;
 
-  const saveOption = (changes: Partial<ImmichConfig>) => {
-    store({ ...saved, ...changes }).catch((err) => setStatus({ kind: 'error', message: String(err) }));
+  const saveOption = (changes: Partial<ImmichSettingsValues>) => {
+    setDraft({});
+    handleSettingsChange({ ...appSettings, immich: { ...saved, ...changes } })
+      .then(refreshImmich)
+      .catch((err) => setStatus({ kind: 'error', message: String(err) }));
   };
 
   const saveConnection = async () => {
     setStatus({ kind: 'busy' });
     try {
-      await store({ ...saved, serverUrl: serverUrl.trim(), apiKey: apiKey.trim() });
+      setKeyInfo(await setImmichApiKey(apiKey.trim()));
+      await handleSettingsChange({ ...appSettings, immich: { ...saved, serverUrl: serverUrl.trim() } });
+      await refreshImmich();
       setStatus({ kind: 'saved' });
     } catch (err) {
       setStatus({ kind: 'error', message: String(err) });
@@ -111,7 +118,7 @@ export default function ImmichSettings() {
   ];
   const isBusy = status.kind === 'busy';
   const hasCredentials = !!serverUrl.trim() && !!apiKey.trim();
-  const connectionChanged = serverUrl.trim() !== saved.serverUrl || apiKey.trim() !== saved.apiKey;
+  const connectionChanged = serverUrl.trim() !== saved.serverUrl || apiKey.trim() !== keyInfo.apiKey;
 
   return (
     <div className="space-y-10">
@@ -142,10 +149,10 @@ export default function ImmichSettings() {
             }}
             bgClassName="bg-bg-primary"
           />
-          {saved.apiKey && !connectionChanged && (
+          {keyInfo.apiKey && !connectionChanged && (
             <Text variant={TextVariants.small} className="mt-2 flex items-center gap-1.5">
-              {saved.keyInCredentialStore ? <Lock size={12} /> : <FileLock size={12} />}
-              {saved.keyInCredentialStore ? t('immich.settings.keyInStore') : t('immich.settings.keyInFile')}
+              {keyInfo.inCredentialStore ? <Lock size={12} /> : <FileLock size={12} />}
+              {keyInfo.inCredentialStore ? t('immich.settings.keyInStore') : t('immich.settings.keyInFile')}
             </Text>
           )}
         </Item>
@@ -175,10 +182,10 @@ export default function ImmichSettings() {
         <Item label={t('immich.settings.listingLimit')} description={t('immich.settings.listingLimitDesc')}>
           <Input
             type="number"
-            value={String(saved.listingLimit)}
-            onChange={(e) => setSaved({ ...saved, listingLimit: Number(e.target.value) })}
+            value={String(shown.listingLimit)}
+            onChange={(e) => setDraft({ ...draft, listingLimit: Number(e.target.value) })}
             onBlur={() =>
-              saveOption({ listingLimit: Math.min(50000, Math.max(100, Math.round(saved.listingLimit || 2000))) })
+              saveOption({ listingLimit: Math.min(50000, Math.max(100, Math.round(shown.listingLimit || 2000))) })
             }
             className="max-w-32"
             bgClassName="bg-bg-primary"
@@ -220,25 +227,37 @@ export default function ImmichSettings() {
             onChange={(exportsToAlbum) => saveOption({ exportsToAlbum })}
           />
         </Item>
+        <Item
+          label={t('immich.settings.replacePreviousExport')}
+          description={t('immich.settings.replacePreviousExportDesc')}
+        >
+          <Switch
+            id="immich-replace-previous-export"
+            label={t('immich.settings.replacePreviousExportSwitch')}
+            checked={saved.replacePreviousExport}
+            disabled={!saved.uploadExports || !saved.exportsToAlbum}
+            onChange={(replacePreviousExport) => saveOption({ replacePreviousExport })}
+          />
+        </Item>
       </Card>
 
       <Card title={t('immich.settings.cacheTitle')}>
         <Item label={t('immich.settings.cacheLimit')} description={t('immich.settings.cacheLimitDesc')}>
           <Input
             type="number"
-            value={String(saved.cacheLimitGb)}
-            onChange={(e) => setSaved({ ...saved, cacheLimitGb: Number(e.target.value) })}
-            onBlur={() => saveOption({ cacheLimitGb: Math.max(1, Math.round(saved.cacheLimitGb || 1)) })}
+            value={String(shown.cacheLimitGb)}
+            onChange={(e) => setDraft({ ...draft, cacheLimitGb: Number(e.target.value) })}
+            onBlur={() => saveOption({ cacheLimitGb: Math.max(1, Math.round(shown.cacheLimitGb || 1)) })}
             className="max-w-32"
             bgClassName="bg-bg-primary"
           />
         </Item>
         <Item label={t('immich.settings.cacheDir')} description={t('immich.settings.cacheDirDesc')}>
           <Input
-            value={saved.cacheDir ?? ''}
+            value={shown.cacheDir ?? ''}
             placeholder={t('immich.settings.cacheDirDefault')}
-            onChange={(e) => setSaved({ ...saved, cacheDir: e.target.value })}
-            onBlur={() => saveOption({ cacheDir: saved.cacheDir?.trim() || null })}
+            onChange={(e) => setDraft({ ...draft, cacheDir: e.target.value })}
+            onBlur={() => saveOption({ cacheDir: shown.cacheDir?.trim() || null })}
             bgClassName="bg-bg-primary"
           />
         </Item>
@@ -258,6 +277,7 @@ function StatusLine({ status }: { status: Status }) {
         <Text variant={TextVariants.small} className="flex items-center gap-1.5">
           <CheckCircle2 size={14} className="text-green-500" />
           {t('immich.settings.connected', { user: status.info.userName, version: status.info.version })}
+          {!status.info.supportsEdits && ` ${t('immich.settings.editsNeedNewerServer')}`}
         </Text>
       );
     case 'saved':

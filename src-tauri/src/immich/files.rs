@@ -18,7 +18,7 @@ pub async fn ensure_local(app_handle: &AppHandle, path: &Path) -> Result<(), Str
         prune_cache_later(&session);
     }
     // Failing to fetch newer edits must not keep the image from opening.
-    if session.config.sync_edits
+    if session.syncs_edits().await
         && let Err(e) = sync::pull(&session.client, &entry.asset_id, path).await
     {
         log::warn!(
@@ -90,6 +90,6 @@ async fn download(
 
 pub fn prune_cache_later(session: &Arc<Session>) {
     let dir = session.cache_dir.clone();
-    let limit = u64::from(session.config.cache_limit_gb) * 1024 * 1024 * 1024;
+    let limit = u64::from(session.settings.cache_limit_gb) * 1024 * 1024 * 1024;
     tauri::async_runtime::spawn_blocking(move || sync::prune_cache(&dir, limit));
 }

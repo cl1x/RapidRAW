@@ -20,17 +20,33 @@ use std::sync::{Arc, RwLock};
 use tauri::AppHandle;
 
 use client::ImmichClient;
-use config::ImmichConfig;
 
+pub use config::ImmichSettings;
 pub use files::{ensure_local, ensure_local_all};
 pub use thumbnails::placeholder_thumbnail;
 pub use trash::trash_remote;
 pub use uploads::{add_to_album, on_exported};
 
+const MIN_VERSION: (u32, u32, u32) = (2, 0, 0);
+const MIN_VERSION_FOR_EDITS: (u32, u32, u32) = (2, 5, 0);
+
 struct Session {
-    config: ImmichConfig,
+    settings: ImmichSettings,
     client: Arc<ImmichClient>,
     cache_dir: PathBuf,
+    version: tokio::sync::OnceCell<(u32, u32, u32)>,
+}
+
+impl Session {
+    async fn syncs_edits(&self) -> bool {
+        if !self.settings.sync_edits {
+            return false;
+        }
+        self.version
+            .get_or_try_init(|| self.client.version_numbers())
+            .await
+            .is_ok_and(|version| *version >= MIN_VERSION_FOR_EDITS)
+    }
 }
 
 static SESSION: Lazy<RwLock<Option<Arc<Session>>>> = Lazy::new(|| RwLock::new(None));
@@ -39,16 +55,18 @@ fn session(app_handle: &AppHandle) -> Result<Arc<Session>, String> {
     if let Some(session) = SESSION.read().unwrap().as_ref() {
         return Ok(session.clone());
     }
-    let config = config::load(app_handle);
-    if !config.is_configured() {
+    let settings = config::load(app_handle);
+    let api_key = config::load_api_key(app_handle).api_key;
+    if settings.server_url.trim().is_empty() || api_key.is_empty() {
         return Err("Immich is not set up yet. Add the server in Settings → Immich.".to_string());
     }
-    let client = Arc::new(ImmichClient::new(&config.server_url, &config.api_key)?);
-    let cache_dir = cache_dir(app_handle, &config)?;
+    let client = Arc::new(ImmichClient::new(&settings.server_url, &api_key)?);
+    let cache_dir = cache_dir(app_handle, &settings)?;
     let session = Arc::new(Session {
-        config,
+        settings,
         client,
         cache_dir,
+        version: tokio::sync::OnceCell::new(),
     });
     *SESSION.write().unwrap() = Some(session.clone());
     sync::start_loop(app_handle);
@@ -66,8 +84,17 @@ fn reset_session(forget_images: bool) {
     }
 }
 
-fn cache_dir(app_handle: &AppHandle, config: &ImmichConfig) -> Result<PathBuf, String> {
-    match config.cache_dir.as_deref().map(str::trim) {
+pub fn apply_settings(settings: &ImmichSettings) {
+    let current = SESSION.read().unwrap().as_ref().map(|s| s.settings.clone());
+    if let Some(current) = current
+        && current != *settings
+    {
+        reset_session(!current.same_library(settings));
+    }
+}
+
+fn cache_dir(app_handle: &AppHandle, settings: &ImmichSettings) -> Result<PathBuf, String> {
+    match settings.cache_dir.as_deref().map(str::trim) {
         Some(dir) if !dir.is_empty() => Ok(PathBuf::from(dir)),
         _ => config::default_cache_dir(app_handle),
     }
