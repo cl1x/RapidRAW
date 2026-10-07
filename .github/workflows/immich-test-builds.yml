@@ -1,0 +1,128 @@
+name: Immich test builds
+
+on:
+  push:
+    branches:
+      - ci-test-builds
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ref: immich-pr1
+            name: pr1
+            kind: linux
+            runner: ubuntu-22.04
+          - ref: immich
+            name: full
+            kind: linux
+            runner: ubuntu-22.04
+          - ref: immich-pr1
+            name: pr1
+            kind: android
+            runner: ubuntu-latest
+          - ref: immich
+            name: full
+            kind: android
+            runner: ubuntu-latest
+    name: ${{ matrix.name }} ${{ matrix.kind }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+          fetch-depth: 0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+          key: immich-${{ matrix.kind }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install system dependencies
+        if: matrix.kind == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file \
+            libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config
+
+      - name: Set up JDK
+        if: matrix.kind == 'android'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        if: matrix.kind == 'android'
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+
+      - name: Set up Android NDK
+        if: matrix.kind == 'android'
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          link-to-sdk: true
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Sign with a throwaway key
+        if: matrix.kind == 'android'
+        run: |
+          keytool -genkeypair -v -keystore "$RUNNER_TEMP/test.jks" -alias test -keyalg RSA -keysize 2048 \
+            -validity 365 -storepass testtest -keypass testtest -dname "CN=RapidRAW Immich test build"
+          cd src-tauri/gen/android
+          echo "keyAlias=test" > keystore.properties
+          echo "password=testtest" >> keystore.properties
+          echo "storeFile=$RUNNER_TEMP/test.jks" >> keystore.properties
+
+      - name: Build Linux bundles
+        if: matrix.kind == 'linux'
+        env:
+          NO_STRIP: 'true'
+        run: npx tauri build --verbose
+
+      - name: Build Android
+        if: matrix.kind == 'android'
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ORT_SKIP_DOWNLOAD: '1'
+          ORT_LIB_LOCATION: ${{ format('{0}/src-tauri/libs/arm64-v8a', github.workspace) }}
+          ORT_STRATEGY: manual
+        run: |
+          rustup target add aarch64-linux-android
+          npx tauri android build --verbose --target aarch64
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.kind == 'linux'
+        with:
+          name: rapidraw-immich-${{ matrix.name }}-linux-x64
+          path: |
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.rpm
+          retention-days: 14
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: matrix.kind == 'android'
+        with:
+          name: rapidraw-immich-${{ matrix.name }}-android-arm64
+          path: src-tauri/gen/android/app/build/outputs/**/*.apk
+          retention-days: 14
+          if-no-files-found: error
