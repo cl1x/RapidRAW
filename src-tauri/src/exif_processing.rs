@@ -1327,6 +1327,15 @@ pub fn write_image_with_metadata(
         if let Some(val) = map.get("CreateDate") {
             metadata.set_tag(ExifTag::CreateDate(clean_s(val)));
         }
+        if let Some(val) = map.get("OffsetTimeOriginal") {
+            metadata.set_tag(ExifTag::OffsetTimeOriginal(clean_s(val)));
+        }
+        if let Some(val) = map.get("OffsetTimeDigitized") {
+            metadata.set_tag(ExifTag::OffsetTimeDigitized(clean_s(val)));
+        }
+        if let Some(val) = map.get("SubSecTimeOriginal") {
+            metadata.set_tag(ExifTag::SubSecTimeOriginal(clean_s(val)));
+        }
         if let Some(val) = map.get("FNumber")
             && let Some(ur) = parse_ur64(val)
         {
@@ -1407,6 +1416,15 @@ pub fn write_image_with_metadata(
             if let Some(f) = exif_obj.get_field(exif::Tag::DateTime, exif::In::PRIMARY) {
                 metadata.set_tag(ExifTag::CreateDate(get_string_val(f)));
             }
+            if let Some(f) = exif_obj.get_field(exif::Tag::OffsetTimeOriginal, exif::In::PRIMARY) {
+                metadata.set_tag(ExifTag::OffsetTimeOriginal(get_string_val(f)));
+            }
+            if let Some(f) = exif_obj.get_field(exif::Tag::OffsetTime, exif::In::PRIMARY) {
+                metadata.set_tag(ExifTag::OffsetTimeDigitized(get_string_val(f)));
+            }
+            if let Some(f) = exif_obj.get_field(exif::Tag::SubSecTimeOriginal, exif::In::PRIMARY) {
+                metadata.set_tag(ExifTag::SubSecTimeOriginal(get_string_val(f)));
+            }
             if let Some(f) = exif_obj.get_field(exif::Tag::FNumber, exif::In::PRIMARY)
                 && let exif::Value::Rational(v) = &f.value
                 && !v.is_empty()
@@ -1482,6 +1500,15 @@ pub fn write_image_with_metadata(
             }
             if let Some(dt) = exif.create_date {
                 metadata.set_tag(ExifTag::CreateDate(dt));
+            }
+            if let Some(offset) = exif.offset_time_original {
+                metadata.set_tag(ExifTag::OffsetTimeOriginal(offset));
+            }
+            if let Some(offset) = exif.offset_time_digitized {
+                metadata.set_tag(ExifTag::OffsetTimeDigitized(offset));
+            }
+            if let Some(sub_sec) = exif.sub_sec_time_original {
+                metadata.set_tag(ExifTag::SubSecTimeOriginal(sub_sec));
             }
             if let Some(lens_make) = exif.lens_make {
                 metadata.set_tag(ExifTag::LensMake(lens_make));
