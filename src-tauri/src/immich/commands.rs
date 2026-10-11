@@ -109,12 +109,14 @@ pub async fn immich_get_images(
         &session.cache_dir,
     )
     .await?;
-    if truncated {
-        let _ = app_handle.emit(
-            "immich-listing-truncated",
-            json!({ "limit": session.settings.listing_limit.clamp(100, 50_000) }),
-        );
-    }
+    let _ = app_handle.emit(
+        "immich-listing",
+        json!({
+            "view": serde_json::to_string(&filter).unwrap_or_default(),
+            "truncated": truncated,
+            "limit": session.settings.listing_limit.clamp(100, 50_000),
+        }),
+    );
 
     let mut local_paths = Vec::new();
     let mut placeholders = Vec::new();

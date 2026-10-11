@@ -21,12 +21,23 @@ type TransferEvent =
   | { state: 'progress'; current: number; total: number }
   | { state: 'done'; added: number; failed: number; error?: string };
 
+interface ListingEvent {
+  view: string;
+  truncated: boolean;
+  limit: number;
+}
+
 const TRANSFER_TOAST = 'immich-transfer';
+const TRUNCATED_TOAST = 'immich-truncated';
+// Several uploads in a row cause a single reload of the library.
+const REFRESH_DELAY_MS = 1500;
 
 export function useImmichEvents(refreshLibrary: () => void) {
   const { t } = useTranslation();
   const refreshRef = useRef(refreshLibrary);
   refreshRef.current = refreshLibrary;
+  const lastView = useRef<string | null>(null);
+  const refreshTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     const unlisteners = [
@@ -63,19 +74,26 @@ export function useImmichEvents(refreshLibrary: () => void) {
           toast.success(t('immich.toasts.transferred', { count: payload.added }));
         }
       }),
-      listen<{ limit: number }>('immich-listing-truncated', ({ payload }) => {
-        toast.info(t('immich.toasts.truncated', { limit: payload.limit }));
+      listen<ListingEvent>('immich-listing', ({ payload }) => {
+        if (payload.truncated && payload.view !== lastView.current) {
+          toast.info(t('immich.toasts.truncated', { limit: payload.limit }), { toastId: TRUNCATED_TOAST });
+        }
+        lastView.current = payload.view;
       }),
       listen<{ error: string }>('immich-trash', ({ payload }) => {
         toast.error(t('immich.toasts.trashFailed', { error: payload.error }));
       }),
       listen('immich-library-changed', () => {
-        useImmichStore.getState().loadAlbums();
-        refreshRef.current();
+        clearTimeout(refreshTimer.current);
+        refreshTimer.current = setTimeout(() => {
+          useImmichStore.getState().loadAlbums();
+          refreshRef.current();
+        }, REFRESH_DELAY_MS);
       }),
     ];
 
     return () => {
+      clearTimeout(refreshTimer.current);
       unlisteners.forEach((unlisten) => unlisten.then((fn) => fn()));
     };
   }, [t]);
