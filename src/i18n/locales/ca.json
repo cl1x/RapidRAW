@@ -947,6 +947,14 @@
     }
   },
   "immich": {
+    "export": {
+      "album": "",
+      "destination": "",
+      "noAlbum": "",
+      "sourceAlbum": "",
+      "withOriginal": "",
+      "withOriginalDesc": ""
+    },
     "filter": {
       "album": "",
       "any": "",
@@ -993,9 +1001,6 @@
       "description": "",
       "editingTitle": "",
       "editsNeedNewerServer": "",
-      "exportsToAlbum": "",
-      "exportsToAlbumDesc": "",
-      "exportsToAlbumSwitch": "",
       "keyInFile": "",
       "keyInStore": "",
       "libraryTitle": "",
@@ -1015,9 +1020,6 @@
       "syncEditsDesc": "",
       "syncEditsSwitch": "",
       "test": "",
-      "uploadExports": "",
-      "uploadExportsDesc": "",
-      "uploadExportsSwitch": "",
       "working": ""
     },
     "toasts": {

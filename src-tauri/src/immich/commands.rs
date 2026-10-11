@@ -145,3 +145,13 @@ fn placeholder_file(path: &str, file_modified_at: Option<&str>) -> ImageFile {
         .unwrap_or(0);
     ImageFile::placeholder(path.to_string(), modified)
 }
+
+#[tauri::command]
+pub fn immich_prepare_export(
+    album: String,
+    with_original: bool,
+    app_handle: AppHandle,
+) -> Result<String, String> {
+    super::uploads::prepare_export(&app_handle, &album, with_original)
+        .map(|folder| folder.to_string_lossy().into_owned())
+}

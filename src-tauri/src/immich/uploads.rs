@@ -1,25 +1,81 @@
+use once_cell::sync::Lazy;
 use serde_json::json;
-use std::path::Path;
-use tauri::{AppHandle, Emitter};
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use tauri::{AppHandle, Emitter, Manager};
 
 use super::{Session, registry, session, sync};
 
 /// Must match `IMMICH_ALBUM_PREFIX` in the frontend.
 const ALBUM_PREFIX: &str = "immich:";
 
+/// Where an export to Immich goes: an album by id, the album the image was
+/// opened from, or none.
+#[derive(Debug, Clone)]
+pub struct ExportTarget {
+    album: ExportAlbum,
+    with_original: bool,
+}
+
+#[derive(Debug, Clone)]
+enum ExportAlbum {
+    None,
+    Source,
+    Album(String),
+}
+
+static EXPORT_TARGETS: Lazy<Mutex<HashMap<PathBuf, ExportTarget>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+
+/// Creates the folder an export to Immich is written to. Files exported into
+/// it are uploaded and then removed.
+pub fn prepare_export(
+    app_handle: &AppHandle,
+    album: &str,
+    with_original: bool,
+) -> Result<PathBuf, String> {
+    session(app_handle)?;
+    let root = app_handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| e.to_string())?
+        .join("immich-exports");
+    if let Ok(entries) = std::fs::read_dir(&root) {
+        for entry in entries.flatten() {
+            let _ = std::fs::remove_dir(entry.path());
+        }
+    }
+    let folder = root.join(uuid::Uuid::new_v4().to_string());
+    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+    let album = match album {
+        "" | "none" => ExportAlbum::None,
+        "source" => ExportAlbum::Source,
+        id => ExportAlbum::Album(id.to_string()),
+    };
+    EXPORT_TARGETS.lock().unwrap().insert(
+        folder.clone(),
+        ExportTarget {
+            album,
+            with_original,
+        },
+    );
+    Ok(folder)
+}
+
 pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path) {
-    let (source, _) = crate::file_management::parse_virtual_path(source_path);
-    let Some(entry) = registry::get(&source) else {
+    let Some(target) = output_path
+        .parent()
+        .and_then(|folder| EXPORT_TARGETS.lock().unwrap().get(folder).cloned())
+    else {
         return;
     };
     let Ok(session) = session(app_handle) else {
         return;
     };
-    if !session.settings.upload_exports {
-        return;
-    }
 
     let app_handle = app_handle.clone();
+    let (source, _) = crate::file_management::parse_virtual_path(source_path);
     let output = output_path.to_path_buf();
     tauri::async_runtime::spawn(async move {
         let file_name = output
@@ -30,12 +86,8 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
             "immich-upload",
             json!({ "state": "started", "fileName": file_name }),
         );
-        if session.syncs_edits().await
-            && let Err(e) = sync::push(&session.client, &entry.asset_id, &source).await
-        {
-            log::warn!("Could not send edits of {}: {e}", source.display());
-        }
-        let result = upload_export(&session, &source, &entry, &output).await;
+        let result = upload_export(&session, &source, &target, &output).await;
+        let _ = std::fs::remove_file(&output);
         let _ = app_handle.emit(
             "immich-upload",
             match &result {
@@ -46,36 +98,59 @@ pub fn on_exported(app_handle: &AppHandle, source_path: &str, output_path: &Path
         if let Err(e) = result {
             log::error!("Immich upload of {} failed: {e}", output.display());
         }
+        let _ = app_handle.emit("immich-library-changed", json!({}));
     });
 }
 
-/// The export goes on top of the stack of its original and, if so set, into
-/// the album the image was opened from, where it may also replace a previous
-/// export of the same image. A previous export always stays in the stack.
+/// The export is stacked on top of its original: the Immich image it was made
+/// from or, if so chosen, the local original uploaded along with it. It may
+/// also take the place of a previous export of the same image in its albums;
+/// a previous export always stays in the stack.
 async fn upload_export(
     session: &Session,
     source: &Path,
-    entry: &registry::RemoteImage,
+    target: &ExportTarget,
     output: &Path,
 ) -> Result<(), String> {
     let client = &session.client;
+    let entry = registry::get(source);
+    if let Some(entry) = &entry
+        && session.syncs_edits().await
+        && let Err(e) = sync::push(client, &entry.asset_id, source).await
+    {
+        log::warn!("Could not send edits of {}: {e}", source.display());
+    }
+    let original = match &entry {
+        Some(entry) => Some(entry.asset_id.clone()),
+        None if target.with_original => {
+            Some(asset_for(session, &source.to_string_lossy(), None).await?)
+        }
+        None => None,
+    };
+
     let modified = file_time(output);
     let new_id = client.upload(output, &modified, &modified).await?.id;
-    if new_id == entry.asset_id {
+    if original.as_deref() == Some(new_id.as_str()) {
         return Ok(());
     }
 
-    // The listed asset is the previous export unless it is the original itself.
-    let previous = (entry.listed_asset_id != entry.asset_id && entry.listed_asset_id != new_id)
-        .then(|| entry.listed_asset_id.clone());
+    let mut albums: Vec<String> = match &target.album {
+        ExportAlbum::None => Vec::new(),
+        ExportAlbum::Source => entry
+            .as_ref()
+            .and_then(|e| e.album_id.clone())
+            .into_iter()
+            .collect(),
+        ExportAlbum::Album(id) => vec![id.clone()],
+    };
 
-    let mut albums: Vec<String> = Vec::new();
+    // The listed asset is the previous export unless it is the original itself.
+    let previous = entry
+        .as_ref()
+        .filter(|e| e.listed_asset_id != e.asset_id && e.listed_asset_id != new_id)
+        .map(|e| e.listed_asset_id.clone());
     let mut replaced_in = Vec::new();
-    if session.settings.exports_to_album {
-        albums.extend(entry.album_id.iter().cloned());
-    }
-    let replace = session.settings.exports_to_album && session.settings.replace_previous_export;
-    if let (true, Some(previous)) = (replace, &previous) {
+    if let (true, Some(previous)) = (session.settings.replace_previous_export, &previous) {
         for album in client.albums_containing(previous).await.unwrap_or_default() {
             if !albums.contains(&album.id) {
                 albums.push(album.id.clone());
@@ -83,14 +158,15 @@ async fn upload_export(
             replaced_in.push(album.id);
         }
     }
+
     for album in &albums {
         client
             .add_to_album(album, std::slice::from_ref(&new_id))
             .await?;
     }
-    client
-        .create_stack(&[new_id.clone(), entry.asset_id.clone()])
-        .await?;
+    if let Some(original) = original {
+        client.create_stack(&[new_id.clone(), original]).await?;
+    }
     if let Some(previous) = previous {
         for album in &replaced_in {
             client
@@ -98,7 +174,9 @@ async fn upload_export(
                 .await?;
         }
     }
-    registry::set_listed_asset(source, &new_id);
+    if entry.is_some() {
+        registry::set_listed_asset(source, &new_id);
+    }
     Ok(())
 }
 

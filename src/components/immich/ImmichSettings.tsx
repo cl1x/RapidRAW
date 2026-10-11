@@ -210,23 +210,6 @@ export default function ImmichSettings() {
             onChange={(syncEdits) => saveOption({ syncEdits })}
           />
         </Item>
-        <Item label={t('immich.settings.uploadExports')} description={t('immich.settings.uploadExportsDesc')}>
-          <Switch
-            id="immich-upload-exports"
-            label={t('immich.settings.uploadExportsSwitch')}
-            checked={saved.uploadExports}
-            onChange={(uploadExports) => saveOption({ uploadExports })}
-          />
-        </Item>
-        <Item label={t('immich.settings.exportsToAlbum')} description={t('immich.settings.exportsToAlbumDesc')}>
-          <Switch
-            id="immich-exports-to-album"
-            label={t('immich.settings.exportsToAlbumSwitch')}
-            checked={saved.exportsToAlbum}
-            disabled={!saved.uploadExports}
-            onChange={(exportsToAlbum) => saveOption({ exportsToAlbum })}
-          />
-        </Item>
         <Item
           label={t('immich.settings.replacePreviousExport')}
           description={t('immich.settings.replacePreviousExportDesc')}
@@ -235,7 +218,6 @@ export default function ImmichSettings() {
             id="immich-replace-previous-export"
             label={t('immich.settings.replacePreviousExportSwitch')}
             checked={saved.replacePreviousExport}
-            disabled={!saved.uploadExports || !saved.exportsToAlbum}
             onChange={(replacePreviousExport) => saveOption({ replacePreviousExport })}
           />
         </Item>

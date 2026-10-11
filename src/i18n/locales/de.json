@@ -947,6 +947,14 @@
     }
   },
   "immich": {
+    "export": {
+      "album": "Album",
+      "destination": "Immich",
+      "noAlbum": "Kein Album",
+      "sourceAlbum": "Album, aus dem das Bild geöffnet wurde",
+      "withOriginal": "Original mit hochladen",
+      "withOriginalDesc": "Für Bilder aus einem lokalen Ordner: Das Original wird mit seinen Bearbeitungen hochgeladen und der Export oben darauf gestapelt. Bilder aus Immich werden immer auf ihr Original gestapelt."
+    },
     "filter": {
       "album": "Album",
       "any": "Alle",
@@ -993,9 +1001,6 @@
       "description": "Zeigt die Fotos deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen.",
       "editingTitle": "Bearbeiten und Exportieren",
       "editsNeedNewerServer": "Bearbeitungen in Immich zu speichern benötigt Immich 2.5 oder neuer.",
-      "exportsToAlbum": "Exporte ins Album legen",
-      "exportsToAlbumDesc": "Der Export kommt in das Album, aus dem das Bild geöffnet wurde. Ausgeschaltet werden Exporte nur hochgeladen und gestapelt, und die Alben bleiben, wie sie sind.",
-      "exportsToAlbumSwitch": "Ins Album legen",
       "keyInFile": "In einer Datei gespeichert, die nur du lesen kannst: Es ist kein Schlüsselbund erreichbar. Unter KDE in den Einstellungen der KDE-Brieftasche die Secret-Service-Schnittstelle einschalten und erneut speichern.",
       "keyInStore": "Im Schlüsselbund des Systems gespeichert.",
       "libraryTitle": "Bibliothek",
@@ -1015,9 +1020,6 @@
       "syncEditsDesc": "Bearbeitungen werden mit dem Bild auf dem Server gespeichert und sind so auf jedem Rechner gleich. Benötigt Immich 2.5 oder neuer. Ausgeschaltet bleiben sie im lokalen Cache.",
       "syncEditsSwitch": "Bearbeitungen abgleichen",
       "test": "Verbindung testen",
-      "uploadExports": "Exporte hochladen",
-      "uploadExportsDesc": "Exporte von Immich-Bildern werden hochgeladen und über ihrem Original gestapelt.",
-      "uploadExportsSwitch": "Zu Immich hochladen",
       "working": "Einen Moment…"
     },
     "toasts": {

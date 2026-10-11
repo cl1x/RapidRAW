@@ -2461,6 +2461,7 @@ pub fn run() {
             immich::commands::immich_test_connection,
             immich::commands::immich_list_albums,
             immich::commands::immich_get_images,
+            immich::commands::immich_prepare_export,
             immich::commands::immich_suggestions,
             immich::commands::immich_list_people,
             immich::commands::immich_timeline,

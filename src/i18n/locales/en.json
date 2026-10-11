@@ -947,6 +947,14 @@
     }
   },
   "immich": {
+    "export": {
+      "album": "Album",
+      "destination": "Immich",
+      "noAlbum": "No album",
+      "sourceAlbum": "Album the image was opened from",
+      "withOriginal": "Upload the original too",
+      "withOriginalDesc": "For images from a local folder: the original is uploaded with its edits and the export is stacked on top of it. Images from Immich are always stacked on their original."
+    },
     "filter": {
       "album": "Album",
       "any": "Any",
@@ -993,9 +1001,6 @@
       "description": "Browse the photos of your Immich server in the library and edit them directly. Originals are downloaded when you open them.",
       "editingTitle": "Editing and exporting",
       "editsNeedNewerServer": "Keeping edits in Immich needs Immich 2.5 or newer.",
-      "exportsToAlbum": "Put exports into the album",
-      "exportsToAlbumDesc": "The export goes into the album the image was opened from. When off, exports are only uploaded and stacked, and albums stay as they are.",
-      "exportsToAlbumSwitch": "Add to album",
       "keyInFile": "Stored in a file only you can read: no credential store is available. On KDE, turn on the Secret Service interface in the KDE Wallet settings and save again.",
       "keyInStore": "Stored in the system's credential store.",
       "libraryTitle": "Library",
@@ -1015,9 +1020,6 @@
       "syncEditsDesc": "Edits are saved with the image on the server, so they are the same on every computer. Needs Immich 2.5 or newer. When off, they stay in the local cache.",
       "syncEditsSwitch": "Sync edits",
       "test": "Test connection",
-      "uploadExports": "Upload exports",
-      "uploadExportsDesc": "Exports of Immich images are uploaded and stacked on top of their original.",
-      "uploadExportsSwitch": "Upload to Immich",
       "working": "Working…"
     },
     "toasts": {

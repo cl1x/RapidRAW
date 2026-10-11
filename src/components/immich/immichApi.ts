@@ -25,6 +25,7 @@ export const ImmichInvokes = {
   Suggestions: 'immich_suggestions',
   ListPeople: 'immich_list_people',
   Timeline: 'immich_timeline',
+  PrepareExport: 'immich_prepare_export',
 } as const;
 
 export type ImmichAlbumSort = 'name' | 'newest' | 'oldest';
@@ -35,8 +36,8 @@ export interface ImmichSettings {
   openStackedRaw: boolean;
   listingLimit: number;
   syncEdits: boolean;
-  uploadExports: boolean;
-  exportsToAlbum: boolean;
+  exportAlbum: string;
+  exportWithOriginal: boolean;
   replacePreviousExport: boolean;
   cacheDir: string | null;
   cacheLimitGb: number;
@@ -48,8 +49,8 @@ export const DEFAULT_IMMICH_SETTINGS: ImmichSettings = {
   openStackedRaw: true,
   listingLimit: 2000,
   syncEdits: true,
-  uploadExports: true,
-  exportsToAlbum: true,
+  exportAlbum: 'source',
+  exportWithOriginal: true,
   replacePreviousExport: false,
   cacheDir: null,
   cacheLimitGb: 20,
@@ -149,3 +150,6 @@ export const monthFilter = (timeBucket: string): ImmichFilter => {
 
 export const getImmichAlbumImages = (albumId: string) =>
   invoke<ImageFile[]>(ImmichInvokes.GetImages, { filter: albumIdToFilter(albumId) });
+
+export const prepareImmichExport = (album: string, withOriginal: boolean) =>
+  invoke<string>(ImmichInvokes.PrepareExport, { album, withOriginal });
