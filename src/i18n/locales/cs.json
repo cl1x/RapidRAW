@@ -1001,6 +1001,11 @@
       "unassignedHint": "Přetáhněte sem obrázky a nahrajte je bez přidání do alba."
     },
     "settings": {
+      "albumSort": "Pořadí alb",
+      "albumSortDesc": "Jak jsou alba seřazena v postranním panelu. Podle data znamená podle nejnovější nebo nejstarší fotky v albu.",
+      "albumSortName": "Podle názvu",
+      "albumSortNewest": "Nejnovější první",
+      "albumSortOldest": "Nejstarší první",
       "apiKey": "API klíč",
       "apiKeyDesc": "Vytvořte jej v Immichi v Nastavení účtu → API klíče s těmito oprávněními: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create a user.read.",
       "cacheDir": "Složka mezipaměti",
@@ -1015,6 +1020,7 @@
       "description": "Procházejte fotky ze svého serveru Immich v knihovně a upravujte je přímo. Originály se stahují při otevření a úpravy se ukládají do Immiche, takže vypadají stejně na každém počítači.",
       "keyInFile": "Uloženo v souboru, který můžete číst jen vy: není k dispozici žádné úložiště přihlašovacích údajů. V KDE zapněte rozhraní Secret Service v nastavení KDE Wallet a uložte znovu.",
       "keyInStore": "Uloženo v systémovém úložišti přihlašovacích údajů.",
+      "libraryTitle": "Knihovna",
       "save": "Uložit",
       "saved": "Uloženo.",
       "serverUrl": "Adresa serveru",

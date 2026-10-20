@@ -2,12 +2,14 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, FileLock, Lock, Wifi, WifiOff } from 'lucide-react';
 import Button from '../ui/Button';
+import Dropdown from '../ui/Dropdown';
 import Input from '../ui/Input';
 import Text from '../ui/Text';
 import { TextColors, TextVariants } from '../../types/typography';
 import {
   DEFAULT_IMMICH_SETTINGS,
   getImmichApiKey,
+  ImmichAlbumSort,
   ImmichApiKeyInfo,
   ImmichConnectionInfo,
   ImmichSettings as ImmichSettingsValues,
@@ -114,6 +116,11 @@ export default function ImmichSettings() {
     }
   };
 
+  const albumSortOptions: { value: ImmichAlbumSort; label: string }[] = [
+    { value: 'name', label: t('immich.settings.albumSortName') },
+    { value: 'newest', label: t('immich.settings.albumSortNewest') },
+    { value: 'oldest', label: t('immich.settings.albumSortOldest') },
+  ];
   const isBusy = status.kind === 'busy';
   const hasCredentials = !!serverUrl.trim() && !!apiKey.trim();
   const connectionChanged = serverUrl.trim() !== saved.serverUrl || apiKey.trim() !== keyInfo.apiKey;
@@ -166,6 +173,17 @@ export default function ImmichSettings() {
           </div>
           <StatusLine status={status} />
         </div>
+      </Card>
+
+      <Card title={t('immich.settings.libraryTitle')}>
+        <Item label={t('immich.settings.albumSort')} description={t('immich.settings.albumSortDesc')}>
+          <Dropdown
+            className="max-w-64"
+            value={saved.albumSort}
+            options={albumSortOptions}
+            onChange={(albumSort) => saveOption({ albumSort: albumSort as ImmichAlbumSort })}
+          />
+        </Item>
       </Card>
 
       <Card title={t('immich.settings.cacheTitle')}>

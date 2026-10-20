@@ -1024,6 +1024,11 @@
       "unassignedHint": "Déposez des images ici pour les envoyer sans les ajouter à un album."
     },
     "settings": {
+      "albumSort": "Ordre des albums",
+      "albumSortDesc": "Ordre des albums dans la barre latérale. Par date signifie la photo la plus récente ou la plus ancienne de l'album.",
+      "albumSortName": "Par nom",
+      "albumSortNewest": "Plus récents d'abord",
+      "albumSortOldest": "Plus anciens d'abord",
       "apiKey": "Clé d'API",
       "apiKeyDesc": "Créez-en une dans Immich sous Paramètres du compte → Clés d'API avec ces autorisations : album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create et user.read.",
       "cacheDir": "Dossier du cache",
@@ -1038,6 +1043,7 @@
       "description": "Parcourez les photos de votre serveur Immich dans la bibliothèque et retouchez-les directement. Les originaux sont téléchargés à l'ouverture et vos retouches sont enregistrées dans Immich, elles sont donc identiques sur chaque ordinateur.",
       "keyInFile": "Enregistrée dans un fichier lisible par vous seul : aucun gestionnaire d'identifiants n'est disponible. Sous KDE, activez l'interface Secret Service dans les paramètres de KDE Wallet, puis enregistrez à nouveau.",
       "keyInStore": "Enregistrée dans le gestionnaire d'identifiants du système.",
+      "libraryTitle": "Bibliothèque",
       "save": "Enregistrer",
       "saved": "Enregistré.",
       "serverUrl": "Adresse du serveur",

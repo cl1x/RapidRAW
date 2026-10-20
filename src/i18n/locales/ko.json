@@ -998,6 +998,11 @@
       "unassignedHint": "이미지를 여기에 놓으면 앨범에 추가하지 않고 업로드합니다."
     },
     "settings": {
+      "albumSort": "앨범 순서",
+      "albumSortDesc": "사이드바에서 앨범을 정렬하는 방식입니다. 날짜순은 앨범의 가장 최근 또는 가장 오래된 사진을 기준으로 합니다.",
+      "albumSortName": "이름순",
+      "albumSortNewest": "최신순",
+      "albumSortOldest": "오래된 순",
       "apiKey": "API 키",
       "apiKeyDesc": "Immich의 계정 설정 → API 키에서 다음 권한으로 만드세요: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create, user.read",
       "cacheDir": "캐시 폴더",
@@ -1012,6 +1017,7 @@
       "description": "Immich 서버의 사진을 라이브러리에서 둘러보고 바로 편집하세요. 원본은 열 때 다운로드되며, 편집 내용은 Immich에 저장되어 모든 컴퓨터에서 똑같이 보입니다.",
       "keyInFile": "본인만 읽을 수 있는 파일에 저장됨: 사용 가능한 자격 증명 저장소가 없습니다. KDE에서는 KDE 지갑 설정에서 Secret Service 인터페이스를 켠 뒤 다시 저장하세요.",
       "keyInStore": "시스템 자격 증명 저장소에 저장됨.",
+      "libraryTitle": "라이브러리",
       "save": "저장",
       "saved": "저장됨.",
       "serverUrl": "서버 주소",

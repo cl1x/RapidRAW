@@ -5,10 +5,20 @@ use tauri::{AppHandle, Manager};
 
 use super::secrets;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub enum AlbumSort {
+    #[default]
+    Name,
+    Newest,
+    Oldest,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase", default)]
 pub struct ImmichSettings {
     pub server_url: String,
+    pub album_sort: AlbumSort,
     pub cache_dir: Option<String>,
     pub cache_limit_gb: u32,
     pub export_album: String,
@@ -19,6 +29,7 @@ impl Default for ImmichSettings {
     fn default() -> Self {
         Self {
             server_url: String::new(),
+            album_sort: AlbumSort::Name,
             cache_dir: None,
             cache_limit_gb: 20,
             export_album: "source".to_string(),

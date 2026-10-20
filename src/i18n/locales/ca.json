@@ -1001,6 +1001,11 @@
       "unassignedHint": "Arrossega imatges aquí per pujar-les sense afegir-les a cap àlbum."
     },
     "settings": {
+      "albumSort": "Ordre dels àlbums",
+      "albumSortDesc": "Com es mostren els àlbums a la barra lateral. Per data vol dir la foto més recent o més antiga de l'àlbum.",
+      "albumSortName": "Per nom",
+      "albumSortNewest": "Primer els més recents",
+      "albumSortOldest": "Primer els més antics",
       "apiKey": "Clau d'API",
       "apiKeyDesc": "Crea'n una a Immich a Configuració del compte → Claus d'API amb aquests permisos: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create i user.read.",
       "cacheDir": "Carpeta de memòria cau",
@@ -1015,6 +1020,7 @@
       "description": "Explora les fotos del teu servidor Immich a la biblioteca i edita-les directament. Els originals es descarreguen quan els obres, i les edicions es desen a Immich, de manera que es veuen igual a tots els ordinadors.",
       "keyInFile": "Desada en un fitxer que només tu pots llegir: no hi ha cap magatzem de credencials disponible. A KDE, activa la interfície Secret Service a la configuració de KDE Wallet i torna a desar.",
       "keyInStore": "Desada al magatzem de credencials del sistema.",
+      "libraryTitle": "Biblioteca",
       "save": "Desa",
       "saved": "Desat.",
       "serverUrl": "Adreça del servidor",

@@ -998,6 +998,11 @@
       "unassignedHint": "ここに画像をドロップすると、アルバムに追加せずにアップロードします。"
     },
     "settings": {
+      "albumSort": "アルバムの並び順",
+      "albumSortDesc": "サイドバーでのアルバムの並べ方です。日付順は、アルバム内で最も新しい写真または最も古い写真を基準にします。",
+      "albumSortName": "名前順",
+      "albumSortNewest": "新しい順",
+      "albumSortOldest": "古い順",
       "apiKey": "API キー",
       "apiKeyDesc": "Immich の「アカウント設定 → API キー」で、次の権限を付けて作成してください: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create, user.read",
       "cacheDir": "キャッシュフォルダー",
@@ -1012,6 +1017,7 @@
       "description": "Immich サーバーの写真をライブラリで閲覧し、そのまま編集できます。オリジナルは開いたときにダウンロードされ、編集内容は Immich に保存されるので、どのコンピューターでも同じに見えます。",
       "keyInFile": "本人だけが読めるファイルに保存されています。利用できる資格情報ストアがありません。KDE の場合は、KDE ウォレットの設定で Secret Service インターフェースを有効にしてから、もう一度保存してください。",
       "keyInStore": "システムの資格情報ストアに保存されています。",
+      "libraryTitle": "ライブラリ",
       "save": "保存",
       "saved": "保存しました。",
       "serverUrl": "サーバーアドレス",

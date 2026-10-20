@@ -998,6 +998,11 @@
       "unassignedHint": "將影像拖到這裡即可上傳，但不加入任何相簿。"
     },
     "settings": {
+      "albumSort": "相簿順序",
+      "albumSortDesc": "相簿在側邊欄中的排列方式。依日期是指依相簿中最新或最舊的照片排序。",
+      "albumSortName": "依名稱",
+      "albumSortNewest": "最新優先",
+      "albumSortOldest": "最舊優先",
       "apiKey": "API 金鑰",
       "apiKeyDesc": "請在 Immich 的「帳戶設定 → API 金鑰」中建立，並授予以下權限：album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create、user.read。",
       "cacheDir": "快取資料夾",
@@ -1012,6 +1017,7 @@
       "description": "在圖庫中瀏覽 Immich 伺服器上的照片並直接編輯。原始檔會在開啟時下載，編輯內容會儲存到 Immich，因此在每台電腦上看起來都一樣。",
       "keyInFile": "已儲存在只有你能讀取的檔案中：沒有可用的認證資訊儲存區。在 KDE 中，請在 KDE 錢包設定裡啟用 Secret Service 介面，然後重新儲存。",
       "keyInStore": "已儲存在系統的認證資訊儲存區。",
+      "libraryTitle": "圖庫",
       "save": "儲存",
       "saved": "已儲存。",
       "serverUrl": "伺服器位址",

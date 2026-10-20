@@ -1026,6 +1026,11 @@
       "unassignedHint": "Trascina qui le immagini per caricarle senza aggiungerle a un album."
     },
     "settings": {
+      "albumSort": "Ordine degli album",
+      "albumSortDesc": "Come vengono elencati gli album nella barra laterale. Per data significa la foto più recente o più vecchia dell'album.",
+      "albumSortName": "Per nome",
+      "albumSortNewest": "Prima i più recenti",
+      "albumSortOldest": "Prima i più vecchi",
       "apiKey": "Chiave API",
       "apiKeyDesc": "Creane una in Immich in Impostazioni account → Chiavi API con questi permessi: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create e user.read.",
       "cacheDir": "Cartella cache",
@@ -1040,6 +1045,7 @@
       "description": "Sfoglia le foto del tuo server Immich nella libreria e modificale direttamente. Gli originali vengono scaricati quando li apri e le modifiche vengono salvate in Immich, così appaiono uguali su ogni computer.",
       "keyInFile": "Salvata in un file leggibile solo da te: nessun archivio di credenziali disponibile. Su KDE, attiva l'interfaccia Secret Service nelle impostazioni di KDE Wallet e salva di nuovo.",
       "keyInStore": "Salvata nell'archivio delle credenziali di sistema.",
+      "libraryTitle": "Libreria",
       "save": "Salva",
       "saved": "Salvato.",
       "serverUrl": "Indirizzo del server",

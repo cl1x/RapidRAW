@@ -994,6 +994,11 @@
       "unassignedHint": "Sleep afbeeldingen hierheen om ze te uploaden zonder ze aan een album toe te voegen."
     },
     "settings": {
+      "albumSort": "Volgorde van albums",
+      "albumSortDesc": "Hoe de albums in de zijbalk worden weergegeven. Op datum betekent de nieuwste of oudste foto in het album.",
+      "albumSortName": "Op naam",
+      "albumSortNewest": "Nieuwste eerst",
+      "albumSortOldest": "Oudste eerst",
       "apiKey": "API-sleutel",
       "apiKeyDesc": "Maak er een aan in Immich onder Accountinstellingen → API-sleutels met deze rechten: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create en user.read.",
       "cacheDir": "Cachemap",
@@ -1008,6 +1013,7 @@
       "description": "Blader door de foto's van je Immich-server in de bibliotheek en bewerk ze direct. Originelen worden gedownload als je ze opent, en je bewerkingen worden in Immich opgeslagen, zodat ze op elke computer hetzelfde zijn.",
       "keyInFile": "Opgeslagen in een bestand dat alleen jij kunt lezen: er is geen sleutelopslag beschikbaar. Zet in KDE de Secret Service-interface aan in de instellingen van KDE Wallet en sla opnieuw op.",
       "keyInStore": "Opgeslagen in de sleutelopslag van het systeem.",
+      "libraryTitle": "Bibliotheek",
       "save": "Opslaan",
       "saved": "Opgeslagen.",
       "serverUrl": "Serveradres",

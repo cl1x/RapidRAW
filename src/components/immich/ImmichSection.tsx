@@ -46,10 +46,11 @@ export default function ImmichSection({
   );
   const [isFilterOpen, setFilterOpen] = useState(false);
   const serverUrl = useSettingsStore((state) => state.appSettings?.immich?.serverUrl);
+  const albumSort = useSettingsStore((state) => state.appSettings?.immich?.albumSort);
 
   useEffect(() => {
     refresh();
-  }, [refresh, serverUrl]);
+  }, [refresh, serverUrl, albumSort]);
 
   const query = searchQuery.trim().toLowerCase();
   const visibleAlbums = useMemo(

@@ -998,6 +998,11 @@
       "unassignedHint": "将图像拖到这里即可上传，但不加入任何相册。"
     },
     "settings": {
+      "albumSort": "相册顺序",
+      "albumSortDesc": "相册在侧边栏中的排列方式。按日期是指按相册中最新或最早的照片排序。",
+      "albumSortName": "按名称",
+      "albumSortNewest": "最新优先",
+      "albumSortOldest": "最早优先",
       "apiKey": "API 密钥",
       "apiKeyDesc": "在 Immich 的“帐户设置 → API 密钥”中创建，并授予以下权限：album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create、user.read。",
       "cacheDir": "缓存文件夹",
@@ -1012,6 +1017,7 @@
       "description": "在图库中浏览 Immich 服务器上的照片并直接编辑。原始文件会在打开时下载，编辑内容会保存到 Immich，因此在每台电脑上看起来都一样。",
       "keyInFile": "已保存在仅你可读取的文件中：没有可用的凭据存储。在 KDE 中，请在 KDE 钱包设置里启用 Secret Service 接口，然后重新保存。",
       "keyInStore": "已保存在系统凭据存储中。",
+      "libraryTitle": "图库",
       "save": "保存",
       "saved": "已保存。",
       "serverUrl": "服务器地址",

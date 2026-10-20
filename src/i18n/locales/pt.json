@@ -1024,6 +1024,11 @@
       "unassignedHint": "Arraste imagens para aqui para as enviar sem as adicionar a um álbum."
     },
     "settings": {
+      "albumSort": "Ordem dos álbuns",
+      "albumSortDesc": "Como os álbuns são listados na barra lateral. Por data significa a fotografia mais recente ou mais antiga do álbum.",
+      "albumSortName": "Por nome",
+      "albumSortNewest": "Mais recentes primeiro",
+      "albumSortOldest": "Mais antigos primeiro",
       "apiKey": "Chave de API",
       "apiKeyDesc": "Crie uma no Immich em Definições da conta → Chaves de API com estas permissões: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create e user.read.",
       "cacheDir": "Pasta de cache",
@@ -1038,6 +1043,7 @@
       "description": "Explore as fotografias do seu servidor Immich na biblioteca e edite-as diretamente. Os originais são transferidos quando os abre e as edições são guardadas no Immich, para que fiquem iguais em todos os computadores.",
       "keyInFile": "Guardada num ficheiro que só você pode ler: não há nenhum armazenamento de credenciais disponível. No KDE, ative a interface Secret Service nas definições da Carteira do KDE e guarde novamente.",
       "keyInStore": "Guardada no armazenamento de credenciais do sistema.",
+      "libraryTitle": "Biblioteca",
       "save": "Guardar",
       "saved": "Guardado.",
       "serverUrl": "Endereço do servidor",

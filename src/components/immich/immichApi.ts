@@ -28,8 +28,11 @@ export const ImmichInvokes = {
   RemoveFromAlbum: 'immich_remove_from_album',
 } as const;
 
+export type ImmichAlbumSort = 'name' | 'newest' | 'oldest';
+
 export interface ImmichSettings {
   serverUrl: string;
+  albumSort: ImmichAlbumSort;
   cacheDir: string | null;
   cacheLimitGb: number;
   exportAlbum: string;
@@ -38,6 +41,7 @@ export interface ImmichSettings {
 
 export const DEFAULT_IMMICH_SETTINGS: ImmichSettings = {
   serverUrl: '',
+  albumSort: 'name',
   cacheDir: null,
   cacheLimitGb: 20,
   exportAlbum: 'source',
@@ -54,6 +58,8 @@ export interface ImmichAlbum {
   albumName: string;
   assetCount: number;
   albumThumbnailAssetId: string | null;
+  startDate: string | null;
+  endDate: string | null;
   shared: boolean;
 }
 

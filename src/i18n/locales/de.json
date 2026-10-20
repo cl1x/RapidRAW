@@ -1000,6 +1000,11 @@
       "unassignedHint": "Bilder hierher ziehen, um sie ohne Album hochzuladen."
     },
     "settings": {
+      "albumSort": "Reihenfolge der Alben",
+      "albumSortDesc": "Wie die Alben in der Seitenleiste sortiert sind. Nach Datum heißt: nach dem neuesten bzw. ältesten Foto im Album.",
+      "albumSortName": "Nach Name",
+      "albumSortNewest": "Neueste zuerst",
+      "albumSortOldest": "Älteste zuerst",
       "apiKey": "API-Schlüssel",
       "apiKeyDesc": "In Immich unter Kontoeinstellungen → API-Schlüssel anlegen, mit diesen Berechtigungen: album.read, albumAsset.create, albumAsset.delete, asset.read, asset.view, asset.download, asset.upload, asset.update, asset.delete, stack.read, stack.create und user.read.",
       "cacheDir": "Cache-Ordner",
@@ -1014,6 +1019,7 @@
       "description": "Zeigt die Fotos deines Immich-Servers in der Bibliothek, damit du sie direkt bearbeiten kannst. Originale werden beim Öffnen heruntergeladen, und deine Bearbeitungen werden in Immich gespeichert – so sehen sie auf jedem Rechner gleich aus.",
       "keyInFile": "In einer Datei gespeichert, die nur du lesen kannst: Es ist kein Schlüsselbund erreichbar. Unter KDE in den Einstellungen der KDE-Brieftasche die Secret-Service-Schnittstelle einschalten und erneut speichern.",
       "keyInStore": "Im Schlüsselbund des Systems gespeichert.",
+      "libraryTitle": "Bibliothek",
       "save": "Speichern",
       "saved": "Gespeichert.",
       "serverUrl": "Serveradresse",
