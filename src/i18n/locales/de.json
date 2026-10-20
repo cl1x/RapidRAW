@@ -1006,9 +1006,25 @@
       "withOriginal": "Original mit hochladen",
       "withOriginalDesc": "Für Bilder aus einem lokalen Ordner: Das Original wird mit seinen Bearbeitungen hochgeladen und der Export oben darauf gestapelt. Bilder aus Immich werden immer auf ihr Original gestapelt."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Alle",
+      "apply": "Anzeigen",
+      "city": "Ort",
+      "country": "Land",
+      "favoritesOnly": "Nur Favoriten",
+      "from": "Von",
+      "make": "Kamerahersteller",
+      "model": "Kameramodell",
+      "person": "Person",
+      "reset": "Filter zurücksetzen",
+      "until": "Bis"
+    },
     "section": {
+      "all": "Alle Fotos",
       "empty": "Keine Alben auf dem Server.",
       "error": "Immich ist nicht erreichbar.",
+      "filter": "Filtern…",
       "loading": "Alben werden geladen…",
       "refresh": "Alben aktualisieren",
       "timeline": "Zeitleiste",

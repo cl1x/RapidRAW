@@ -1030,9 +1030,25 @@
       "withOriginal": "Envoyer aussi l'original",
       "withOriginalDesc": "Pour les images d'un dossier local : l'original est envoyé avec ses retouches et l'export est empilé par-dessus. Les images d'Immich sont toujours empilées sur leur original."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Tous",
+      "apply": "Afficher",
+      "city": "Ville",
+      "country": "Pays",
+      "favoritesOnly": "Favoris uniquement",
+      "from": "Du",
+      "make": "Marque de l'appareil",
+      "model": "Modèle de l'appareil",
+      "person": "Personne",
+      "reset": "Réinitialiser le filtre",
+      "until": "Au"
+    },
     "section": {
+      "all": "Toutes les photos",
       "empty": "Aucun album sur le serveur.",
       "error": "Immich est injoignable.",
+      "filter": "Filtrer…",
       "loading": "Chargement des albums…",
       "refresh": "Actualiser les albums",
       "timeline": "Chronologie",

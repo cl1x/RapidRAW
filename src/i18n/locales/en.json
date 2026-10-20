@@ -1006,9 +1006,25 @@
       "withOriginal": "Upload the original too",
       "withOriginalDesc": "For images from a local folder: the original is uploaded with its edits and the export is stacked on top of it. Images from Immich are always stacked on their original."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Any",
+      "apply": "Show",
+      "city": "City",
+      "country": "Country",
+      "favoritesOnly": "Favorites only",
+      "from": "From",
+      "make": "Camera make",
+      "model": "Camera model",
+      "person": "Person",
+      "reset": "Reset filter",
+      "until": "Until"
+    },
     "section": {
+      "all": "All photos",
       "empty": "No albums on the server.",
       "error": "Immich is not reachable.",
+      "filter": "Filter…",
       "loading": "Loading albums…",
       "refresh": "Refresh albums",
       "timeline": "Timeline",

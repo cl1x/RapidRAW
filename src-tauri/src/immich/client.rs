@@ -68,6 +68,20 @@ pub struct MetadataEntry {
     pub updated_at: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Person {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PeoplePage {
+    people: Vec<Person>,
+    #[serde(default)]
+    has_next_page: bool,
+}
+
 #[derive(Deserialize)]
 struct Version {
     major: u32,
@@ -214,6 +228,54 @@ impl ImmichClient {
             )
             .await?;
         Ok((result.assets.items, result.assets.next_page.is_some()))
+    }
+
+    pub async fn suggestions(
+        &self,
+        kind: &str,
+        country: Option<&str>,
+        make: Option<&str>,
+    ) -> Result<Vec<String>, String> {
+        let mut path = format!("/search/suggestions?type={}", encode(kind));
+        if let Some(country) = country {
+            path.push_str(&format!("&country={}", encode(country)));
+        }
+        if let Some(make) = make {
+            path.push_str(&format!("&make={}", encode(make)));
+        }
+        let values: Vec<Option<String>> = self
+            .json(self.request(Method::GET, &path), "suggestions")
+            .await?;
+        Ok(values
+            .into_iter()
+            .flatten()
+            .filter(|v| !v.is_empty())
+            .collect())
+    }
+
+    pub async fn named_people(&self) -> Result<Vec<Person>, String> {
+        let mut people = Vec::new();
+        let mut page = 1u32;
+        loop {
+            let result: PeoplePage = self
+                .json(
+                    self.request(Method::GET, &format!("/people?page={page}&size=500")),
+                    "people",
+                )
+                .await?;
+            people.extend(
+                result
+                    .people
+                    .into_iter()
+                    .filter(|p| !p.name.trim().is_empty()),
+            );
+            if !result.has_next_page {
+                break;
+            }
+            page += 1;
+        }
+        people.sort_by_key(|p| p.name.to_lowercase());
+        Ok(people)
     }
 
     pub async fn stacks(&self) -> Result<Vec<Stack>, String> {
@@ -407,4 +469,16 @@ fn mime_for(file_name: &str) -> &'static str {
         "heic" | "heif" => "image/heic",
         _ => "application/octet-stream",
     }
+}
+
+fn encode(value: &str) -> String {
+    value
+        .bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
 }

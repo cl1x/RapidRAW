@@ -1007,9 +1007,25 @@
       "withOriginal": "Nahrát i originál",
       "withOriginalDesc": "Pro obrázky z místní složky: originál se nahraje i s úpravami a export se umístí na něj do zásobníku. Obrázky z Immiche se vždy skládají na svůj originál."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Libovolné",
+      "apply": "Zobrazit",
+      "city": "Město",
+      "country": "Země",
+      "favoritesOnly": "Jen oblíbené",
+      "from": "Od",
+      "make": "Výrobce fotoaparátu",
+      "model": "Model fotoaparátu",
+      "person": "Osoba",
+      "reset": "Zrušit filtr",
+      "until": "Do"
+    },
     "section": {
+      "all": "Všechny fotky",
       "empty": "Na serveru nejsou žádná alba.",
       "error": "Immich není dostupný.",
+      "filter": "Filtrovat…",
       "loading": "Načítání alb…",
       "refresh": "Obnovit alba",
       "timeline": "Časová osa",

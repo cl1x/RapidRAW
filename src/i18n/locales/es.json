@@ -1030,9 +1030,25 @@
       "withOriginal": "Subir también el original",
       "withOriginalDesc": "Para imágenes de una carpeta local: el original se sube con sus ediciones y la exportación se apila encima. Las imágenes de Immich siempre se apilan sobre su original."
     },
+    "filter": {
+      "album": "Álbum",
+      "any": "Cualquiera",
+      "apply": "Mostrar",
+      "city": "Ciudad",
+      "country": "País",
+      "favoritesOnly": "Solo favoritas",
+      "from": "Desde",
+      "make": "Marca de la cámara",
+      "model": "Modelo de la cámara",
+      "person": "Persona",
+      "reset": "Restablecer filtro",
+      "until": "Hasta"
+    },
     "section": {
+      "all": "Todas las fotos",
       "empty": "No hay álbumes en el servidor.",
       "error": "No se puede acceder a Immich.",
+      "filter": "Filtrar…",
       "loading": "Cargando álbumes…",
       "refresh": "Actualizar álbumes",
       "timeline": "Cronología",

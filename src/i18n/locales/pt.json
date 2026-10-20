@@ -1030,9 +1030,25 @@
       "withOriginal": "Enviar também o original",
       "withOriginalDesc": "Para imagens de uma pasta local: o original é enviado com as respetivas edições e a exportação é empilhada por cima. As imagens do Immich são sempre empilhadas sobre o seu original."
     },
+    "filter": {
+      "album": "Álbum",
+      "any": "Qualquer",
+      "apply": "Mostrar",
+      "city": "Cidade",
+      "country": "País",
+      "favoritesOnly": "Só favoritas",
+      "from": "De",
+      "make": "Marca da câmara",
+      "model": "Modelo da câmara",
+      "person": "Pessoa",
+      "reset": "Repor filtro",
+      "until": "Até"
+    },
     "section": {
+      "all": "Todas as fotografias",
       "empty": "Não há álbuns no servidor.",
       "error": "O Immich não está acessível.",
+      "filter": "Filtrar…",
       "loading": "A carregar álbuns…",
       "refresh": "Atualizar álbuns",
       "timeline": "Cronologia",

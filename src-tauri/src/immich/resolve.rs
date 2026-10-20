@@ -20,6 +20,12 @@ pub struct Filter {
     pub not_in_album: bool,
     pub taken_from: Option<String>,
     pub taken_until: Option<String>,
+    pub country: Option<String>,
+    pub city: Option<String>,
+    pub make: Option<String>,
+    pub model: Option<String>,
+    pub person_ids: Vec<String>,
+    pub favorites_only: bool,
 }
 
 impl Filter {
@@ -36,6 +42,22 @@ impl Filter {
         }
         if let Some(until) = day_start(self.taken_until.as_deref(), 1) {
             query["takenBefore"] = json!(until);
+        }
+        for (key, value) in [
+            ("country", &self.country),
+            ("city", &self.city),
+            ("make", &self.make),
+            ("model", &self.model),
+        ] {
+            if let Some(v) = value.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+                query[key] = json!(v);
+            }
+        }
+        if !self.person_ids.is_empty() {
+            query["personIds"] = json!(self.person_ids);
+        }
+        if self.favorites_only {
+            query["isFavorite"] = json!(true);
         }
         query
     }
