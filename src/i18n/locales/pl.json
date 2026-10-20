@@ -1021,9 +1021,25 @@
       "withOriginal": "Prześlij także oryginał",
       "withOriginalDesc": "Dla zdjęć z folderu lokalnego: oryginał jest przesyłany wraz z edycjami, a eksport układany na nim w stos. Zdjęcia z Immich są zawsze układane na swoim oryginale."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Dowolne",
+      "apply": "Pokaż",
+      "city": "Miasto",
+      "country": "Kraj",
+      "favoritesOnly": "Tylko ulubione",
+      "from": "Od",
+      "make": "Producent aparatu",
+      "model": "Model aparatu",
+      "person": "Osoba",
+      "reset": "Wyczyść filtr",
+      "until": "Do"
+    },
     "section": {
+      "all": "Wszystkie zdjęcia",
       "empty": "Brak albumów na serwerze.",
       "error": "Immich jest niedostępny.",
+      "filter": "Filtruj…",
       "loading": "Wczytywanie albumów…",
       "refresh": "Odśwież albumy",
       "timeline": "Oś czasu",

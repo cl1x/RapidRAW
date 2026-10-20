@@ -1,12 +1,13 @@
-import { ReactNode, useEffect, useMemo } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import clsx from 'clsx';
-import { Album as AlbumIcon, CloudOff, CloudUpload, Inbox, RefreshCw, Users } from 'lucide-react';
+import { Album as AlbumIcon, CloudOff, CloudUpload, Inbox, RefreshCw, SlidersHorizontal, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import Text from '../ui/Text';
 import { TextVariants, TextWeights } from '../../types/typography';
-import { IMMICH_UNASSIGNED_ID, toImmichAlbumId } from './immichApi';
+import { filterToAlbumId, IMMICH_UNASSIGNED_ID, ImmichFilter, isImmichFilterId, toImmichAlbumId } from './immichApi';
+import ImmichFilterForm, { describeFilter } from './ImmichFilterForm';
 import ImmichRow from './ImmichRow';
 import ImmichTimeline from './ImmichTimeline';
 import { useImmichStore } from './useImmichStore';
@@ -30,10 +31,12 @@ export default function ImmichSection({
   showImageCounts,
 }: ImmichSectionProps) {
   const { t } = useTranslation();
-  const { isConfigured, albums, isLoading, error, syncStatus, refresh, loadAlbums } = useImmichStore(
+  const { isConfigured, albums, isLoading, error, syncStatus, filter, setFilter, refresh, loadAlbums } = useImmichStore(
     useShallow((state) => ({
       isConfigured: state.isConfigured,
       syncStatus: state.syncStatus,
+      filter: state.filter,
+      setFilter: state.setFilter,
       albums: state.albums,
       isLoading: state.isLoading,
       error: state.error,
@@ -41,6 +44,7 @@ export default function ImmichSection({
       loadAlbums: state.loadAlbums,
     })),
   );
+  const [isFilterOpen, setFilterOpen] = useState(false);
   const serverUrl = useSettingsStore((state) => state.appSettings?.immich?.serverUrl);
 
   useEffect(() => {
@@ -56,6 +60,15 @@ export default function ImmichSection({
   if (!isConfigured || (query && visibleAlbums.length === 0)) {
     return null;
   }
+
+  const isFilterSelected = isImmichFilterId(selectedAlbumId);
+
+  const applyFilter = (next: ImmichFilter) => {
+    setFilter(next);
+    setFilterOpen(false);
+    const title = describeFilter(next, albums, t('immich.section.all'), t('immich.section.unassigned'));
+    onSelectAlbum(filterToAlbumId(next), title, []);
+  };
 
   return (
     <>
@@ -93,6 +106,24 @@ export default function ImmichSection({
                     onSelect={() => onSelectAlbum(IMMICH_UNASSIGNED_ID, t('immich.section.unassigned'), [])}
                     tooltip={t('immich.section.unassignedHint')}
                   />
+                  <ImmichRow
+                    icon={SlidersHorizontal}
+                    label={t('immich.section.filter')}
+                    isSelected={isFilterSelected}
+                    onSelect={() => setFilterOpen((open) => !open)}
+                  />
+                  <AnimatePresence initial={false}>
+                    {isFilterOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <ImmichFilterForm albums={albums} initial={filter} onApply={applyFilter} />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="my-1 mx-2 h-px bg-surface" />
                 </>
               )}

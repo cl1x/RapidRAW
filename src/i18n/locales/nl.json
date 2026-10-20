@@ -967,9 +967,25 @@
       "withOriginal": "Origineel ook uploaden",
       "withOriginalDesc": "Voor afbeeldingen uit een lokale map: het origineel wordt met zijn bewerkingen geüpload en de export wordt erbovenop gestapeld. Afbeeldingen uit Immich worden altijd op hun origineel gestapeld."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Alle",
+      "apply": "Tonen",
+      "city": "Plaats",
+      "country": "Land",
+      "favoritesOnly": "Alleen favorieten",
+      "from": "Van",
+      "make": "Cameramerk",
+      "model": "Cameramodel",
+      "person": "Persoon",
+      "reset": "Filter wissen",
+      "until": "Tot"
+    },
     "section": {
+      "all": "Alle foto's",
       "empty": "Geen albums op de server.",
       "error": "Immich is niet bereikbaar.",
+      "filter": "Filteren…",
       "loading": "Albums laden…",
       "refresh": "Albums vernieuwen",
       "timeline": "Tijdlijn",

@@ -2535,6 +2535,8 @@ pub fn run() {
             immich::commands::immich_flush,
             immich::commands::immich_prepare_export,
             immich::commands::immich_remove_from_album,
+            immich::commands::immich_suggestions,
+            immich::commands::immich_list_people,
             immich::commands::immich_timeline,
         ])
         .build(tauri::generate_context!())

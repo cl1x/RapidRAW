@@ -971,9 +971,25 @@
       "withOriginal": "同時上傳原始檔",
       "withOriginalDesc": "對於本機資料夾中的影像：原始檔會連同編輯內容一起上傳，匯出的影像會堆疊在其上方。來自 Immich 的影像一律堆疊在其原始檔上。"
     },
+    "filter": {
+      "album": "相簿",
+      "any": "全部",
+      "apply": "顯示",
+      "city": "城市",
+      "country": "國家/地區",
+      "favoritesOnly": "僅收藏",
+      "from": "從",
+      "make": "相機品牌",
+      "model": "相機型號",
+      "person": "人物",
+      "reset": "重設篩選",
+      "until": "到"
+    },
     "section": {
+      "all": "所有照片",
       "empty": "伺服器上沒有相簿。",
       "error": "無法連線到 Immich。",
+      "filter": "篩選…",
       "loading": "正在載入相簿…",
       "refresh": "重新整理相簿",
       "timeline": "時間軸",

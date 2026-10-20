@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::path::Path;
 use tauri::AppHandle;
 
-use super::client::{Album, ImmichClient, TimelineMonth};
+use super::client::{Album, ImmichClient, Person, TimelineMonth};
 use super::config::{self, ApiKeyInfo};
 use super::{MIN_VERSION, registry, reset_session, resolve, session, sync};
 use crate::file_management::ImageFile;
@@ -60,6 +60,27 @@ pub async fn immich_list_albums(app_handle: AppHandle) -> Result<Vec<Album>, Str
 #[tauri::command]
 pub async fn immich_timeline(app_handle: AppHandle) -> Result<Vec<TimelineMonth>, String> {
     session(&app_handle)?.client.timeline_months().await
+}
+
+#[tauri::command]
+pub async fn immich_suggestions(
+    kind: String,
+    country: Option<String>,
+    make: Option<String>,
+    app_handle: AppHandle,
+) -> Result<Vec<String>, String> {
+    let session = session(&app_handle)?;
+    let mut values = session
+        .client
+        .suggestions(&kind, country.as_deref(), make.as_deref())
+        .await?;
+    values.sort_by_key(|v| v.to_lowercase());
+    Ok(values)
+}
+
+#[tauri::command]
+pub async fn immich_list_people(app_handle: AppHandle) -> Result<Vec<Person>, String> {
+    session(&app_handle)?.client.named_people().await
 }
 
 #[tauri::command]

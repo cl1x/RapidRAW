@@ -10,12 +10,17 @@ export const isImmichAlbumId = (albumId: string | null | undefined): albumId is 
 
 export const toImmichAlbumId = (immichId: string) => `${IMMICH_ALBUM_PREFIX}${immichId}`;
 
+export const isImmichFilterId = (albumId: string | null | undefined) =>
+  isImmichAlbumId(albumId) && albumId.startsWith(`${IMMICH_ALBUM_PREFIX}${FILTER_MARKER}`);
+
 export const ImmichInvokes = {
   GetApiKey: 'immich_get_api_key',
   SetApiKey: 'immich_set_api_key',
   TestConnection: 'immich_test_connection',
   ListAlbums: 'immich_list_albums',
   GetImages: 'immich_get_images',
+  Suggestions: 'immich_suggestions',
+  ListPeople: 'immich_list_people',
   Timeline: 'immich_timeline',
   SyncStatus: 'immich_sync_status',
   Flush: 'immich_flush',
@@ -73,7 +78,20 @@ export interface ImmichFilter {
   notInAlbum?: boolean;
   takenFrom?: string | null;
   takenUntil?: string | null;
+  country?: string | null;
+  city?: string | null;
+  make?: string | null;
+  model?: string | null;
+  personIds?: string[];
+  favoritesOnly?: boolean;
 }
+
+export interface ImmichPerson {
+  id: string;
+  name: string;
+}
+
+export type SuggestionKind = 'country' | 'city' | 'camera-make' | 'camera-model';
 
 export const filterToAlbumId = (filter: ImmichFilter) =>
   `${IMMICH_ALBUM_PREFIX}${FILTER_MARKER}${JSON.stringify(filter)}`;
@@ -127,3 +145,12 @@ export const flushImmichEdits = () => invoke<ImmichSyncStatus>(ImmichInvokes.Flu
 
 export const prepareImmichExport = (album: string, withOriginal: boolean) =>
   invoke<string>(ImmichInvokes.PrepareExport, { album, withOriginal });
+
+export const getImmichSuggestions = (kind: SuggestionKind, narrow: { country?: string; make?: string } = {}) =>
+  invoke<string[]>(ImmichInvokes.Suggestions, {
+    kind,
+    country: narrow.country || null,
+    make: narrow.make || null,
+  });
+
+export const listImmichPeople = () => invoke<ImmichPerson[]>(ImmichInvokes.ListPeople);

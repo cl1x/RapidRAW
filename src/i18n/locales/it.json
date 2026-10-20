@@ -999,9 +999,25 @@
       "withOriginal": "Carica anche l'originale",
       "withOriginalDesc": "Per le immagini di una cartella locale: l'originale viene caricato con le sue modifiche e l'esportazione viene impilata sopra. Le immagini di Immich vengono sempre impilate sul loro originale."
     },
+    "filter": {
+      "album": "Album",
+      "any": "Qualsiasi",
+      "apply": "Mostra",
+      "city": "Città",
+      "country": "Paese",
+      "favoritesOnly": "Solo preferiti",
+      "from": "Dal",
+      "make": "Marca fotocamera",
+      "model": "Modello fotocamera",
+      "person": "Persona",
+      "reset": "Reimposta filtro",
+      "until": "Al"
+    },
     "section": {
+      "all": "Tutte le foto",
       "empty": "Nessun album sul server.",
       "error": "Immich non è raggiungibile.",
+      "filter": "Filtra…",
       "loading": "Caricamento album…",
       "refresh": "Aggiorna album",
       "timeline": "Cronologia",

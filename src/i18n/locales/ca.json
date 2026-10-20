@@ -974,9 +974,25 @@
       "withOriginal": "Puja també l'original",
       "withOriginalDesc": "Per a imatges d'una carpeta local: l'original es puja amb les seves edicions i l'exportació s'apila a sobre. Les imatges d'Immich sempre s'apilen sobre el seu original."
     },
+    "filter": {
+      "album": "Àlbum",
+      "any": "Qualsevol",
+      "apply": "Mostra",
+      "city": "Ciutat",
+      "country": "País",
+      "favoritesOnly": "Només preferides",
+      "from": "Des de",
+      "make": "Fabricant de la càmera",
+      "model": "Model de la càmera",
+      "person": "Persona",
+      "reset": "Restableix el filtre",
+      "until": "Fins a"
+    },
     "section": {
+      "all": "Totes les fotos",
       "empty": "No hi ha àlbums al servidor.",
       "error": "No es pot accedir a Immich.",
+      "filter": "Filtra…",
       "loading": "Carregant àlbums…",
       "refresh": "Actualitza els àlbums",
       "timeline": "Cronologia",

@@ -971,9 +971,25 @@
       "withOriginal": "원본도 업로드",
       "withOriginalDesc": "로컬 폴더의 이미지: 원본이 편집 내용과 함께 업로드되고 내보낸 파일이 그 위에 스택됩니다. Immich의 이미지는 항상 원본 위에 스택됩니다."
     },
+    "filter": {
+      "album": "앨범",
+      "any": "전체",
+      "apply": "표시",
+      "city": "도시",
+      "country": "국가",
+      "favoritesOnly": "즐겨찾기만",
+      "from": "시작",
+      "make": "카메라 제조사",
+      "model": "카메라 모델",
+      "person": "인물",
+      "reset": "필터 초기화",
+      "until": "끝"
+    },
     "section": {
+      "all": "모든 사진",
       "empty": "서버에 앨범이 없습니다.",
       "error": "Immich에 연결할 수 없습니다.",
+      "filter": "필터…",
       "loading": "앨범 불러오는 중…",
       "refresh": "앨범 새로고침",
       "timeline": "타임라인",

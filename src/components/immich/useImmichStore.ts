@@ -4,6 +4,7 @@ import {
   getImmichApiKey,
   getImmichSyncStatus,
   ImmichAlbum,
+  ImmichFilter,
   ImmichSyncStatus,
   ImmichTimelineMonth,
   listImmichAlbums,
@@ -18,6 +19,8 @@ interface ImmichState {
   timeline: ImmichTimelineMonth[];
   syncStatus: ImmichSyncStatus;
   setSyncStatus(syncStatus: ImmichSyncStatus): void;
+  filter: ImmichFilter;
+  setFilter(filter: ImmichFilter): void;
   loadTimeline(): Promise<void>;
   refresh(): Promise<void>;
   loadAlbums(): Promise<void>;
@@ -31,6 +34,8 @@ export const useImmichStore = create<ImmichState>((set, get) => ({
   timeline: [],
   syncStatus: { offline: false, pending: 0 },
   setSyncStatus: (syncStatus) => set({ syncStatus }),
+  filter: {},
+  setFilter: (filter) => set({ filter }),
   loadTimeline: async () => {
     try {
       set({ timeline: await listImmichTimeline() });

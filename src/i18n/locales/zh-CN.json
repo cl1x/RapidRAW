@@ -971,9 +971,25 @@
       "withOriginal": "同时上传原始文件",
       "withOriginalDesc": "对于本地文件夹中的图像：原始文件会连同编辑内容一起上传，导出的图像会堆叠在其上方。来自 Immich 的图像始终堆叠在其原始文件上。"
     },
+    "filter": {
+      "album": "相册",
+      "any": "全部",
+      "apply": "显示",
+      "city": "城市",
+      "country": "国家/地区",
+      "favoritesOnly": "仅收藏",
+      "from": "从",
+      "make": "相机品牌",
+      "model": "相机型号",
+      "person": "人物",
+      "reset": "重置筛选",
+      "until": "到"
+    },
     "section": {
+      "all": "所有照片",
       "empty": "服务器上没有相册。",
       "error": "无法连接到 Immich。",
+      "filter": "筛选…",
       "loading": "正在加载相册…",
       "refresh": "刷新相册",
       "timeline": "时间线",
