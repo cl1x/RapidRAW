@@ -96,6 +96,7 @@ export default function ImmichSection({
                   label={album.albumName}
                   count={album.assetCount}
                   showCount={showImageCounts}
+                  dropId={toImmichAlbumId(album.id)}
                   isSelected={toImmichAlbumId(album.id) === selectedAlbumId}
                   onSelect={() => onSelectAlbum(toImmichAlbumId(album.id), album.albumName, [])}
                 />
